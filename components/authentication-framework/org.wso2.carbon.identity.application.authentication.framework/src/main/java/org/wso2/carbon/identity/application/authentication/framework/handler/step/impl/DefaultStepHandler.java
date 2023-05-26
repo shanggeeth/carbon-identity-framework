@@ -256,7 +256,8 @@ public class DefaultStepHandler implements StepHandler {
             }
         } else {
 
-            if (!(context.isForceAuthenticate() || stepConfig.isForced()) && !authenticatedStepIdps.isEmpty()) {
+            if (!(context.isForceAuthenticate() || stepConfig.isForced()) && !authenticatedStepIdps.isEmpty()
+            && !isLoggedInWithOrganizationLogin(authenticatedStepIdps)) {
 
                 Map.Entry<String, AuthenticatorConfig> entry = authenticatedStepIdps.entrySet()
                         .iterator().next();
@@ -1296,5 +1297,18 @@ public class DefaultStepHandler implements StepHandler {
                 ("accountrecoveryendpoint/confirmrecovery.do?" + context.getContextIdIncludedQueryParams()))
                 + "&username=" + URLEncoder.encode(username, "UTF-8") + "&confirmation=" + otp
                 + "&callback=" + URLEncoder.encode(callback, "UTF-8") + reCaptchaParamString.toString();
+    }
+
+    private boolean isLoggedInWithOrganizationLogin(Map<String, AuthenticatorConfig> authenticatedStepIdPs) {
+
+        if (authenticatedStepIdPs == null) {
+            return false;
+        }
+        for (Map.Entry<String, AuthenticatorConfig> entry : authenticatedStepIdPs.entrySet()) {
+            if (entry.getValue().getName().equals("OrganizationAuthenticator")) {
+                return true;
+            }
+        }
+        return false;
     }
 }
