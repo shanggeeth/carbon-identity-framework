@@ -19,7 +19,14 @@ package org.wso2.carbon.identity.user.registration.internal;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentContext;
+import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.user.registration.AttributeCollectionRegStepExecutor;
+import org.wso2.carbon.identity.user.registration.PasswordOnboardingRegStepExecutor;
+import org.wso2.carbon.identity.user.registration.RegistrationStepExecutor;
+import org.wso2.carbon.identity.user.registration.UserRegistrationFlowService;
+import org.wso2.carbon.identity.user.registration.UserRegistrationFlowServiceImpl;
 import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.user.core.service.RealmService;
 import org.osgi.service.component.annotations.Activate;
@@ -76,6 +83,18 @@ public class UserRegistrationDSComponent {
 
     @Activate
     protected void activate(ComponentContext ctxt) {
+
+        BundleContext bundleContext = ctxt.getBundleContext();
+
+        UserRegistrationFlowService registrationFlowService = UserRegistrationFlowServiceImpl.getInstance();
+        bundleContext.registerService(UserRegistrationFlowService.class.getName(), registrationFlowService, null);
+
+        bundleContext.registerService(RegistrationStepExecutor.class.getName(),
+                AttributeCollectionRegStepExecutor.getInstance(), null);
+
+        bundleContext.registerService(RegistrationStepExecutor.class.getName(),
+                PasswordOnboardingRegStepExecutor.getInstance(), null);
+
         log.debug("UserRegistration bundle is activated ");
     }
 
@@ -96,6 +115,38 @@ public class UserRegistrationDSComponent {
             log.info("Unsetting the Realm Service");
         }
         UserRegistrationDSComponent.realmService = null;
+    }
+
+    @Reference(
+            name = "ApplicationManagementService",
+            service = ApplicationManagementService.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetApplicationManagementService")
+    protected void setApplicationManagementService(ApplicationManagementService applicationManagementService) {
+
+        UserRegistrationServiceDataHolder.setApplicationManagementService(applicationManagementService);
+    }
+
+    protected void unsetApplicationManagementService(ApplicationManagementService applicationManagementService) {
+
+        UserRegistrationServiceDataHolder.setApplicationManagementService(null);
+    }
+
+    @Reference(
+            name = "RegistrationStepExecutor",
+            service = RegistrationStepExecutor.class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetRegistrationStepExecutor")
+    protected void setRegistrationStepExecutor(RegistrationStepExecutor registrationStepExecutor) {
+
+        UserRegistrationServiceDataHolder.getRegistrationStepExecutors().add(registrationStepExecutor);
+    }
+
+    protected void unsetRegistrationStepExecutor(RegistrationStepExecutor registrationStepExecutor) {
+
+        UserRegistrationServiceDataHolder.getRegistrationStepExecutors().remove(registrationStepExecutor);
     }
 }
 

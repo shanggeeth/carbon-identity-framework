@@ -38,5 +38,4 @@ public class SelfRegistrationConstants {
     private SelfRegistrationConstants(){
 
     }
-
 }
