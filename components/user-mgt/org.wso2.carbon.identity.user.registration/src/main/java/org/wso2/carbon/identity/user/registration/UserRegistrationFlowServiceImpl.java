@@ -57,7 +57,7 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
             throw new RegistrationFrameworkException("Invalid flow id.");
         }
         RegistrationResponse response = handler.handle(request, context);
-        if (RegistrationFlowConstants.Status.COMPLETE.equals(response.getStatus())) {
+        if (context.isCompleted()) {
             LOG.debug("Registration flow completed for flow id: " + request.getFlowId() +
                     ". Hence clearing the cache.");
             RegistrationFrameworkUtils.removeRegContextFromCache(request.getFlowId());

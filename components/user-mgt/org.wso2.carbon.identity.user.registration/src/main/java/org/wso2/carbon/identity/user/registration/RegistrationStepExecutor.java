@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration;
 
+import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecutorConfig;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
@@ -34,6 +35,7 @@ public interface RegistrationStepExecutor {
 
     String getExecutorType() throws RegistrationFrameworkException;
 
-    ExecutorResponse execute(RegistrationRequest registrationRequest, RegistrationContext context) throws RegistrationFrameworkException;
+    ExecutorResponse execute(RegistrationRequest registrationRequest, RegistrationContext context,
+                             RegistrationStepExecutorConfig config) throws RegistrationFrameworkException;
 
 }

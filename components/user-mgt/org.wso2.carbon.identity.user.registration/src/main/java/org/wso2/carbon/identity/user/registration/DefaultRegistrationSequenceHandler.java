@@ -25,7 +25,7 @@ import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.response.CurrentStepResponse;
 import org.wso2.carbon.identity.user.registration.model.response.RegistrationResponse;
-import org.wso2.carbon.identity.user.registration.model.RegistrationStep;
+import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 
 public class DefaultRegistrationSequenceHandler implements RegistrationSequenceHandler{
@@ -75,6 +75,7 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
 
                 log.info("TESTING: There are no more steps to execute.");
                 context.getRegistrationSequence().setCompleted(true);
+                response.setStatus(RegistrationFlowConstants.Status.COMPLETE);
                 continue;
             }
 
@@ -95,7 +96,8 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
 
         if (context.getRegistrationSequence().isCompleted()) {
             log.info("The registration is completed. Can trigger post registration steps.");
-            context.setFlowStatus(RegistrationFlowConstants.Status.COMPLETE);
+            context.setCompleted(true);
+            response.setStatus(RegistrationFlowConstants.Status.COMPLETE);
         }
         return response;
     }

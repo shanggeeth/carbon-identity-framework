@@ -27,7 +27,6 @@ public class RegistrationRequest implements Serializable {
     private static final long serialVersionUID = -8742948356919529312L;
 
     private String flowId;
-    private String flowType;
     private String inputType;
     private Map<String, String> inputs = new HashMap<String, String>();
 
@@ -49,16 +48,6 @@ public class RegistrationRequest implements Serializable {
     public void setInputs(Map<String, String> inputs) {
 
         this.inputs = inputs;
-    }
-
-    public String getFlowType() {
-
-        return flowType;
-    }
-
-    public void setFlowType(String flowType) {
-
-        this.flowType = flowType;
     }
 
     public String getInputType() {

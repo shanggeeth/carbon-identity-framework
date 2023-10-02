@@ -16,12 +16,12 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.registration.model;
+package org.wso2.carbon.identity.user.registration.config;
+
+import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class RegistrationSequence implements Serializable {

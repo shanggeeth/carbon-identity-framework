@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.user.registration;
 
+import org.wso2.carbon.identity.application.common.model.ClaimMapping;
+import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecutorConfig;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
@@ -64,13 +66,13 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
     }
 
     @Override
-    public ExecutorResponse execute(RegistrationRequest registrationRequest, RegistrationContext context)
+    public ExecutorResponse execute(RegistrationRequest registrationRequest, RegistrationContext context, RegistrationStepExecutorConfig config)
             throws RegistrationFrameworkException {
 
         ExecutorResponse response = new ExecutorResponse();
+        response.setGivenName(config.getGivenName());
         response.setName(this.getName());
-        response.setId("someIdForAttributeCollectorInstance");
-        response.setType(this.getExecutorType());
+        response.setId(config.getId());
 
         if ( registrationRequest == null || registrationRequest.getInputs() == null ) {
 
@@ -78,17 +80,19 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
                     RegistrationFlowConstants.StepStatus.INCOMPLETE);
 
             List<RequiredParam> params = new ArrayList<>();
-            RequiredParam param1 = new RequiredParam();
-            param1.setName("username");
-            param1.setConfidential(false);
-            param1.setMandatory(true);
-            params.add(param1);
 
-            RequiredParam param2 = new RequiredParam();
-            param2.setName("firstname");
-            param2.setConfidential(false);
-            param2.setMandatory(true);
-            params.add(param2);
+            int displayOder = 0;
+            for (ClaimMapping mapping : config.getRequestedClaims()) {
+                RequiredParam param = new RequiredParam();
+                param.setName(mapping.getRemoteClaim().getClaimUri());
+                param.setConfidential(false);
+                param.setMandatory(mapping.isMandatory());
+                param.setDataType(RegistrationFlowConstants.DataType.STRING); //TODO: Need to get the data type from the
+                param.setOrder(displayOder++);
+                param.setI18nKey("i18nKey_claim_should_support");
+                param.setValidationRegex("validationRegex_claim_should_support");
+                params.add(param);
+            }
 
             response.setStatus(RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED);
             response.setRequiredParams(params);
@@ -101,8 +105,14 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
                 context.setRegisteringUser(user);
             }
 
-            user.setUsername(inputs.get("username"));
-            user.setClaims(inputs);
+            if (inputs.get("username") != null) {
+                user.setUsername(inputs.get("username"));
+            }
+            if (user.getClaims() != null) {
+                user.getClaims().putAll(inputs);
+            } else {
+                user.setClaims(inputs);
+            }
             response.setStatus(RegistrationFlowConstants.StepStatus.COMPLETE);
         }
         return response;

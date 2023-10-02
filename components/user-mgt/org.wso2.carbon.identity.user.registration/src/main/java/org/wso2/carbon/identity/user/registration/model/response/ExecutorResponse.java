@@ -27,12 +27,22 @@ import java.util.List;
  */
 public class ExecutorResponse {
 
+    private String givenName;
     private String name;
     private String id;
-    private String type;
     private List<RequiredParam> requiredParams;
     private List<Message> messages;
     private RegistrationFlowConstants.StepStatus status = RegistrationFlowConstants.StepStatus.INCOMPLETE;
+
+    public String getGivenName() {
+
+        return givenName;
+    }
+
+    public void setGivenName(String givenName) {
+
+        this.givenName = givenName;
+    }
 
     public String getName() {
 
@@ -52,16 +62,6 @@ public class ExecutorResponse {
     public void setId(String id) {
 
         this.id = id;
-    }
-
-    public String getType() {
-
-        return type;
-    }
-
-    public void setType(String type) {
-
-        this.type = type;
     }
 
     public List<RequiredParam> getRequiredParams() {

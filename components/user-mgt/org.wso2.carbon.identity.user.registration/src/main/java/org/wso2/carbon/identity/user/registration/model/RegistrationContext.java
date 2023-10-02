@@ -18,10 +18,10 @@
 
 package org.wso2.carbon.identity.user.registration.model;
 
+import org.wso2.carbon.identity.user.registration.config.RegistrationSequence;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 
 import java.io.Serializable;
-import java.util.UUID;
 
 public class RegistrationContext implements Serializable {
 
@@ -34,7 +34,7 @@ public class RegistrationContext implements Serializable {
     private String relyingParty;
     private RegistrationRequestedUser registeringUser;
     private RegistrationSequence registrationSequence;
-    private RegistrationFlowConstants.Status flowStatus;
+    private boolean isCompleted;
 
     public int getCurrentStep() {
 
@@ -106,13 +106,13 @@ public class RegistrationContext implements Serializable {
         this.registrationSequence = registrationSequence;
     }
 
-    public RegistrationFlowConstants.Status getFlowStatus() {
+    public boolean isCompleted() {
 
-        return flowStatus;
+        return isCompleted;
     }
 
-    public void setFlowStatus(RegistrationFlowConstants.Status flowStatus) {
+    public void setCompleted(boolean completed) {
 
-        this.flowStatus = flowStatus;
+        isCompleted = completed;
     }
 }

@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration;
 
+import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecutorConfig;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
@@ -65,13 +66,13 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
     }
 
     @Override
-    public ExecutorResponse execute(RegistrationRequest registrationRequest, RegistrationContext context)
+    public ExecutorResponse execute(RegistrationRequest registrationRequest, RegistrationContext context, RegistrationStepExecutorConfig config)
             throws RegistrationFrameworkException {
 
         ExecutorResponse response = new ExecutorResponse();
+        response.setGivenName(config.getGivenName());
         response.setName(this.getName());
         response.setId("password-onboarding");
-        response.setType(this.getExecutorType());
 
         if ( registrationRequest == null || registrationRequest.getInputs() == null ) {
 

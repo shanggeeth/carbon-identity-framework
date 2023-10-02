@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.registration.model;
+package org.wso2.carbon.identity.user.registration.config;
 
 import org.wso2.carbon.identity.user.registration.RegistrationStepExecutor;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
@@ -31,8 +31,8 @@ public class RegistrationStep implements Serializable {
     private int order;
     private boolean isMultiOption;
     private RegistrationFlowConstants.StepStatus status;
-    private RegistrationStepExecutor selectedExecutor;
-    private List<RegistrationStepExecutor> configuredExecutors = new ArrayList<>();
+    private RegistrationStepExecutorConfig selectedExecutor;
+    private List<RegistrationStepExecutorConfig> configuredExecutors = new ArrayList<>();
 
     public int getOrder() {
 
@@ -64,22 +64,22 @@ public class RegistrationStep implements Serializable {
         this.status = status;
     }
 
-    public RegistrationStepExecutor getSelectedExecutor() {
+    public RegistrationStepExecutorConfig getSelectedExecutor() {
 
         return selectedExecutor;
     }
 
-    public void setSelectedExecutor(RegistrationStepExecutor selectedExecutor) {
+    public void setSelectedExecutor(RegistrationStepExecutorConfig selectedExecutor) {
 
         this.selectedExecutor = selectedExecutor;
     }
 
-    public List<RegistrationStepExecutor> getConfiguredExecutors() {
+    public List<RegistrationStepExecutorConfig> getConfiguredExecutors() {
 
         return configuredExecutors;
     }
 
-    public void setConfiguredExecutors(List<RegistrationStepExecutor> configuredExecutors) {
+    public void setConfiguredExecutors(List<RegistrationStepExecutorConfig> configuredExecutors) {
 
         this.configuredExecutors = configuredExecutors;
     }
