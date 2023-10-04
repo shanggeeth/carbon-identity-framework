@@ -21,6 +21,7 @@ package org.wso2.carbon.identity.user.registration.internal;
 import org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.user.registration.RegistrationStepExecutor;
+import org.wso2.carbon.user.core.service.RealmService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,7 @@ public class UserRegistrationServiceDataHolder {
 
     private static final List<RegistrationStepExecutor> registrationStepExecutors = new ArrayList<>();
     private static ApplicationManagementService applicationManagementService;
+    private static RealmService realmService = null;
 
     public static List<RegistrationStepExecutor> getRegistrationStepExecutors() {
 
@@ -45,5 +47,15 @@ public class UserRegistrationServiceDataHolder {
     public static void setApplicationManagementService(ApplicationManagementService applicationManagementService) {
 
         UserRegistrationServiceDataHolder.applicationManagementService = applicationManagementService;
+    }
+
+    public static RealmService getRealmService() {
+
+        return realmService;
+    }
+
+    public static void setRealmService(RealmService realmService) {
+
+        UserRegistrationServiceDataHolder.realmService = realmService;
     }
 }

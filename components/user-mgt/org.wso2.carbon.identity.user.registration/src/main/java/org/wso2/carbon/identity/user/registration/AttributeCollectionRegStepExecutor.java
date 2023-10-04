@@ -25,6 +25,7 @@ import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequestedUser;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
+import org.wso2.carbon.identity.user.registration.model.response.Message;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 
@@ -95,7 +96,16 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
             }
 
             response.setStatus(RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED);
+
+            Message message = new Message();
+            message.setMessage("User input required");
+            message.setType(RegistrationFlowConstants.MessageType.INFO);
+
+            List<Message> messages = new ArrayList<>();
+            messages.add(message);
+
             response.setRequiredParams(params);
+            response.setMessages(messages);
         } else if (registrationRequest.getInputs() != null) {
 
             Map<String, String> inputs = registrationRequest.getInputs();
@@ -105,8 +115,8 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
                 context.setRegisteringUser(user);
             }
 
-            if (inputs.get("username") != null) {
-                user.setUsername(inputs.get("username"));
+            if (inputs.get("http://wso2.org/claims/username") != null) {
+                user.setUsername(inputs.get("http://wso2.org/claims/username"));
             }
             if (user.getClaims() != null) {
                 user.getClaims().putAll(inputs);

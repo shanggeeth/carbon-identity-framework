@@ -18,9 +18,9 @@
 
 package org.wso2.carbon.identity.user.registration.model;
 
-import org.wso2.carbon.user.core.claim.Claim;
-
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class RegistrationRequestedUser implements Serializable {
@@ -28,8 +28,10 @@ public class RegistrationRequestedUser implements Serializable {
     private static final long serialVersionUID = -1873658743998134877L;
 
     private String username;
+    private boolean isPasswordless = true;
     private String credential;
     private Map<String, String> claims;
+    private List<String> statusList = new ArrayList<>();
 
     public String getUsername() {
 
@@ -59,5 +61,30 @@ public class RegistrationRequestedUser implements Serializable {
     public void setClaims(Map<String, String> claims) {
 
         this.claims = claims;
+    }
+
+    public boolean isPasswordless() {
+
+        return isPasswordless;
+    }
+
+    public void setPasswordless(boolean passwordless) {
+
+        isPasswordless = passwordless;
+    }
+
+    public List<String> getStatusList() {
+
+        return statusList;
+    }
+
+    public void addUserStatus(String status) {
+
+        this.statusList.add(status);
+    }
+
+    public boolean isVerifiedUserStatus(String status) {
+
+        return this.statusList.contains(status);
     }
 }

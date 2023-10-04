@@ -22,6 +22,8 @@ import org.wso2.carbon.identity.user.registration.config.RegistrationSequence;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RegistrationContext implements Serializable {
 
@@ -35,6 +37,7 @@ public class RegistrationContext implements Serializable {
     private RegistrationRequestedUser registeringUser;
     private RegistrationSequence registrationSequence;
     private boolean isCompleted;
+    private Map<String, Object> properties = new HashMap<>();
 
     public int getCurrentStep() {
 
@@ -114,5 +117,23 @@ public class RegistrationContext implements Serializable {
     public void setCompleted(boolean completed) {
 
         isCompleted = completed;
+    }
+
+    public Map<String, Object> getProperties() {
+
+        return properties;
+    }
+
+    public void setProperties(Map<String, Object> properties) {
+
+        this.properties = properties;
+    }
+
+    public Object getProperty(String key) {
+        return this.properties.get(key);
+    }
+
+    public void setProperty(String key, Object value) {
+        this.properties.put(key, value);
     }
 }

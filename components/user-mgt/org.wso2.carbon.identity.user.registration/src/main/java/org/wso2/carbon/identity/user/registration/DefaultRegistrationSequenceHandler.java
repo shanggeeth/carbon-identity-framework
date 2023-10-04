@@ -27,11 +27,12 @@ import org.wso2.carbon.identity.user.registration.model.response.CurrentStepResp
 import org.wso2.carbon.identity.user.registration.model.response.RegistrationResponse;
 import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationFrameworkUtils;
 
 public class DefaultRegistrationSequenceHandler implements RegistrationSequenceHandler{
 
     private static DefaultRegistrationSequenceHandler instance = new DefaultRegistrationSequenceHandler();
-    private static final Log log = LogFactory.getLog(DefaultRegistrationSequenceHandler.class);
+    private static final Log LOG = LogFactory.getLog(DefaultRegistrationSequenceHandler.class);
 
     private DefaultRegistrationSequenceHandler() {
 
@@ -62,9 +63,6 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
             // if the current step is completed
             if (stepConfig != null && RegistrationFlowConstants.StepStatus.COMPLETE.equals(stepConfig.getStatus())) {
 
-                log.info("TESTING: Step " + stepConfig.getOrder() + " is completed. Going to get the next" +
-                        " one.");
-
                 currentStep = context.getCurrentStep() + 1;
                 context.setCurrentStep(currentStep);
                 stepConfig = context.getRegistrationSequence().getStepMap().get(currentStep);
@@ -73,21 +71,21 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
             // If no further steps exists
             if (stepConfig == null) {
 
-                log.info("TESTING: There are no more steps to execute.");
+                LOG.info("TESTING: There are no more steps to execute.");
                 context.getRegistrationSequence().setCompleted(true);
                 response.setStatus(RegistrationFlowConstants.Status.COMPLETE);
                 continue;
             }
 
             // If the sequence is not completed, we have work to do.
-            log.info("TESTING: Starting Step: " + stepConfig.getOrder());
+            LOG.info("TESTING: Starting Step: " + stepConfig.getOrder());
 
             RegistrationStepHandler registrationStepHandler = DefaultRegistrationStepHandler.getInstance();
             CurrentStepResponse response1 = registrationStepHandler.handle(request, context);
 
             // if step is not completed, that means step wants to redirect to outside
             if (!RegistrationFlowConstants.StepStatus.COMPLETE.equals(stepConfig.getStatus())) {
-                log.info("TESTING: Step is not complete yet. Redirecting to outside.");
+                LOG.info("TESTING: Step is not complete yet. Redirecting to outside.");
                 response.setStatus(RegistrationFlowConstants.Status.INCOMPLETE);
                 response.setCurrentStep(response1);
                 return response;
@@ -95,7 +93,8 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
         }
 
         if (context.getRegistrationSequence().isCompleted()) {
-            log.info("The registration is completed. Can trigger post registration steps.");
+            LOG.info("The registration is completed. Can trigger post registration steps.");
+            RegistrationFrameworkUtils.createUser(context.getRegisteringUser());
             context.setCompleted(true);
             response.setStatus(RegistrationFlowConstants.Status.COMPLETE);
         }

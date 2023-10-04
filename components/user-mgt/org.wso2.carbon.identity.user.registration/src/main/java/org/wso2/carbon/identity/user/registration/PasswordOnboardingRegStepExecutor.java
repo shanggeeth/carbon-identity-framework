@@ -24,6 +24,7 @@ import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequestedUser;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
+import org.wso2.carbon.identity.user.registration.model.response.Message;
 import org.wso2.carbon.identity.user.registration.model.response.RegistrationResponse;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
@@ -50,13 +51,13 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
     @Override
     public RegistrationFlowConstants.RegistrationExecutorBindingType getBindingType() throws RegistrationFrameworkException {
 
-        return RegistrationFlowConstants.RegistrationExecutorBindingType.NONE;
+        return RegistrationFlowConstants.RegistrationExecutorBindingType.AUTHENTICATOR;
     }
 
     @Override
     public String getBoundIdentifier() throws RegistrationFrameworkException {
 
-        return null;
+        return "BasicAuthenticator";
     }
 
     @Override
@@ -83,6 +84,16 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
             param1.setMandatory(true);
             params.add(param1);
 
+            Message message = new Message();
+            message.setMessage("Onboard a password");
+            message.setType(RegistrationFlowConstants.MessageType.INFO);
+
+            List<Message> messages = new ArrayList<>();
+            messages.add(message);
+
+            response.setRequiredParams(params);
+            response.setMessages(messages);
+
             response.setStatus(RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED);
             response.setRequiredParams(params);
         } else if (registrationRequest.getInputs() != null) {
@@ -94,8 +105,9 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
             }
 
             if (inputs.get("password") == null) {
-                throw new RegistrationFrameworkException("Password is not set as expected in the step");
+                throw new RegistrationFrameworkException("Password is not set as expected in the step.");
             }
+            user.setPasswordless(false);
             user.setCredential(inputs.get("password"));
             response.setStatus(RegistrationFlowConstants.StepStatus.COMPLETE);
         }
