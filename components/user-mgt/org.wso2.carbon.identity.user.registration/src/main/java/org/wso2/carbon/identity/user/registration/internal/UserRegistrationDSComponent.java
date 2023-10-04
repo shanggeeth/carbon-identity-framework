@@ -79,6 +79,7 @@ public class UserRegistrationDSComponent {
             log.info("Setting the Realm Service");
         }
         UserRegistrationDSComponent.realmService = realmService;
+        UserRegistrationServiceDataHolder.setRealmService(realmService);
     }
 
     @Activate
@@ -115,6 +116,7 @@ public class UserRegistrationDSComponent {
             log.info("Unsetting the Realm Service");
         }
         UserRegistrationDSComponent.realmService = null;
+        UserRegistrationServiceDataHolder.setRealmService(null);
     }
 
     @Reference(

@@ -22,8 +22,9 @@ import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecuto
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
-import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
+import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus;
 
 public interface RegistrationStepExecutor {
 
@@ -35,7 +36,7 @@ public interface RegistrationStepExecutor {
 
     String getExecutorType() throws RegistrationFrameworkException;
 
-    ExecutorResponse execute(RegistrationRequest registrationRequest, RegistrationContext context,
-                             RegistrationStepExecutorConfig config) throws RegistrationFrameworkException;
+    StepStatus execute(RegistrationRequest request, RegistrationContext context, NextStepResponse response,
+                                                 RegistrationStepExecutorConfig config) throws RegistrationFrameworkException;
 
 }

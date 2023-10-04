@@ -30,7 +30,8 @@ public class RegistrationResponse {
 
     private String flowId;
     private RegistrationFlowConstants.Status status;
-    private CurrentStepResponse currentStep;
+    private String userAssertion;
+    private NextStepResponse nextStep;
     private List<LinkObject> links = new ArrayList<>();
 
     public String getFlowId() {
@@ -53,14 +54,14 @@ public class RegistrationResponse {
         this.status = status;
     }
 
-    public CurrentStepResponse getCurrentStep() {
+    public NextStepResponse getNextStep() {
 
-        return currentStep;
+        return nextStep;
     }
 
-    public void setCurrentStep(CurrentStepResponse currentStep) {
+    public void setNextStep(NextStepResponse nextStep) {
 
-        this.currentStep = currentStep;
+        this.nextStep = nextStep;
     }
 
     public List<LinkObject> getLinks() {
@@ -71,5 +72,15 @@ public class RegistrationResponse {
     public void setLinks(List<LinkObject> links) {
 
         this.links = links;
+    }
+
+    public String getUserAssertion() {
+
+        return userAssertion;
+    }
+
+    public void setUserAssertion(String userAssertion) {
+
+        this.userAssertion = userAssertion;
     }
 }

@@ -23,14 +23,21 @@ import org.wso2.carbon.identity.user.registration.exception.RegistrationFramewor
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequestedUser;
+import org.wso2.carbon.identity.user.registration.model.response.ExecutorMetadata;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
-import org.wso2.carbon.identity.user.registration.model.response.RegistrationResponse;
+import org.wso2.carbon.identity.user.registration.model.response.Message;
+import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
+import org.wso2.carbon.identity.user.registration.model.response.RegistrationStepResult;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.COMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.INCOMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED;
 
 public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecutor {
 
@@ -50,13 +57,13 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
     @Override
     public RegistrationFlowConstants.RegistrationExecutorBindingType getBindingType() throws RegistrationFrameworkException {
 
-        return RegistrationFlowConstants.RegistrationExecutorBindingType.NONE;
+        return RegistrationFlowConstants.RegistrationExecutorBindingType.AUTHENTICATOR;
     }
 
     @Override
     public String getBoundIdentifier() throws RegistrationFrameworkException {
 
-        return null;
+        return "BasicAuthenticator";
     }
 
     @Override
@@ -66,15 +73,11 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
     }
 
     @Override
-    public ExecutorResponse execute(RegistrationRequest registrationRequest, RegistrationContext context, RegistrationStepExecutorConfig config)
-            throws RegistrationFrameworkException {
+    public RegistrationFlowConstants.StepStatus execute(RegistrationRequest request, RegistrationContext context,
+                                                        NextStepResponse response,
+                                                        RegistrationStepExecutorConfig config) throws RegistrationFrameworkException {
 
-        ExecutorResponse response = new ExecutorResponse();
-        response.setGivenName(config.getGivenName());
-        response.setName(this.getName());
-        response.setId("password-onboarding");
-
-        if ( registrationRequest == null || registrationRequest.getInputs() == null ) {
+        if ( request == null || request.getInputs() == null ) {
 
             List<RequiredParam> params = new ArrayList<>();
             RequiredParam param1 = new RequiredParam();
@@ -83,22 +86,46 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
             param1.setMandatory(true);
             params.add(param1);
 
-            response.setStatus(RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED);
-            response.setRequiredParams(params);
-        } else if (registrationRequest.getInputs() != null) {
+            Message message = new Message();
+            message.setMessage("Onboard a password");
+            message.setType(RegistrationFlowConstants.MessageType.INFO);
 
-            Map<String, String> inputs = registrationRequest.getInputs();
-            RegistrationRequestedUser user =  context.getRegisteringUser();
+            updateResponse(response, config, params, message);
+
+            return USER_INPUT_REQUIRED;
+        } else if (request.getInputs() != null) {
+
+            Map<String, String> inputs = request.getInputs();
+            RegistrationRequestedUser user = context.getRegisteringUser();
             if (user == null) {
                 throw new RegistrationFrameworkException("User not found in the registration context");
             }
 
             if (inputs.get("password") == null) {
-                throw new RegistrationFrameworkException("Password is not set as expected in the step");
+                throw new RegistrationFrameworkException("Password is not set as expected in the step.");
             }
+            user.setPasswordless(false);
             user.setCredential(inputs.get("password"));
-            response.setStatus(RegistrationFlowConstants.StepStatus.COMPLETE);
+            return COMPLETE;
         }
-        return response;
+        return INCOMPLETE;
+    }
+
+    private void updateResponse(NextStepResponse response, RegistrationStepExecutorConfig config,
+                                List<RequiredParam> params, Message message) {
+
+        ExecutorResponse executorResponse = new ExecutorResponse();
+        executorResponse.setName(config.getName());
+        executorResponse.setExecutorName(this.getName());
+        executorResponse.setId(config.getId());
+
+        ExecutorMetadata metadata = new ExecutorMetadata();
+        metadata.setI18nKey("executor.passwordOnboarding");
+        metadata.setPromptType(RegistrationFlowConstants.PromptType.USER_PROMPT);
+        metadata.setRequiredParams(params);
+        executorResponse.setMetadata(metadata);
+
+        response.addExecutor(executorResponse);
+        response.addMessage(message);
     }
 }

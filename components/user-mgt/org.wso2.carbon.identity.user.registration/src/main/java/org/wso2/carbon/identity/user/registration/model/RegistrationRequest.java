@@ -27,7 +27,7 @@ public class RegistrationRequest implements Serializable {
     private static final long serialVersionUID = -8742948356919529312L;
 
     private String flowId;
-    private String inputType;
+    private String executorId;
     private Map<String, String> inputs = new HashMap<String, String>();
 
     public String getFlowId() {
@@ -50,13 +50,13 @@ public class RegistrationRequest implements Serializable {
         this.inputs = inputs;
     }
 
-    public String getInputType() {
+    public String getExecutorId() {
 
-        return inputType;
+        return executorId;
     }
 
-    public void setInputType(String inputType) {
+    public void setExecutorId(String executorId) {
 
-        this.inputType = inputType;
+        this.executorId = executorId;
     }
 }

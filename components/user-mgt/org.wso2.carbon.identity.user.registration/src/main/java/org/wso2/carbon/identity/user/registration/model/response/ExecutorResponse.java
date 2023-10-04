@@ -27,22 +27,10 @@ import java.util.List;
  */
 public class ExecutorResponse {
 
-    private String givenName;
     private String name;
+    private String executorName;
     private String id;
-    private List<RequiredParam> requiredParams;
-    private List<Message> messages;
-    private RegistrationFlowConstants.StepStatus status = RegistrationFlowConstants.StepStatus.INCOMPLETE;
-
-    public String getGivenName() {
-
-        return givenName;
-    }
-
-    public void setGivenName(String givenName) {
-
-        this.givenName = givenName;
-    }
+    private ExecutorMetadata metadata;
 
     public String getName() {
 
@@ -52,6 +40,16 @@ public class ExecutorResponse {
     public void setName(String name) {
 
         this.name = name;
+    }
+
+    public String getExecutorName() {
+
+        return executorName;
+    }
+
+    public void setExecutorName(String executorName) {
+
+        this.executorName = executorName;
     }
 
     public String getId() {
@@ -64,33 +62,13 @@ public class ExecutorResponse {
         this.id = id;
     }
 
-    public List<RequiredParam> getRequiredParams() {
+    public ExecutorMetadata getMetadata() {
 
-        return requiredParams;
+        return metadata;
     }
 
-    public void setRequiredParams(List<RequiredParam> requiredParams) {
+    public void setMetadata(ExecutorMetadata metadata) {
 
-        this.requiredParams = requiredParams;
-    }
-
-    public List<Message> getMessages() {
-
-        return messages;
-    }
-
-    public void setMessages(List<Message> messages) {
-
-        this.messages = messages;
-    }
-
-    public RegistrationFlowConstants.StepStatus getStatus() {
-
-        return status;
-    }
-
-    public void setStatus(RegistrationFlowConstants.StepStatus status) {
-
-        this.status = status;
+        this.metadata = metadata;
     }
 }

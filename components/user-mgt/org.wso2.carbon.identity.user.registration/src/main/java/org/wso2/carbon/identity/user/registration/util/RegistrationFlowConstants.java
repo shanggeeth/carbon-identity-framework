@@ -66,6 +66,14 @@ public class RegistrationFlowConstants {
     }
 
     /**
+     * Prompt types for the registration steps.
+     */
+    public enum PromptType {
+
+        USER_PROMPT,
+    }
+
+    /**
      * Status of a registration steps.
      */
     public enum StepStatus {

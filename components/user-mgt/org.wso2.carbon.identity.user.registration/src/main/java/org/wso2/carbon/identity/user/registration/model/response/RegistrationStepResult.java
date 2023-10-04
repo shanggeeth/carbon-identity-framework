@@ -20,34 +20,42 @@ package org.wso2.carbon.identity.user.registration.model.response;
 
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * This class represents the current registration along with its type and the configured executors.
+ * This class represents the result of a registration step.
  */
-public class CurrentStepResponse {
+public class RegistrationStepResult {
 
-    private RegistrationFlowConstants.StepType type;
-    private List<ExecutorResponse> executors;
+    private RegistrationFlowConstants.StepStatus status = RegistrationFlowConstants.StepStatus.INCOMPLETE;
+    private Message message;
+    private ExecutorResponse response;
 
-    public RegistrationFlowConstants.StepType getType() {
+    public RegistrationFlowConstants.StepStatus getStatus() {
 
-        return type;
+        return status;
     }
 
-    public void setType(RegistrationFlowConstants.StepType type) {
+    public void setStatus(RegistrationFlowConstants.StepStatus status) {
 
-        this.type = type;
+        this.status = status;
     }
 
-    public List<ExecutorResponse> getExecutors() {
+    public Message getMessage() {
 
-        return executors;
+        return message;
     }
 
-    public void setExecutors(List<ExecutorResponse> executors) {
+    public void setMessage(Message message) {
 
-        this.executors = executors;
+        this.message = message;
+    }
+
+    public ExecutorResponse getResponse() {
+
+        return response;
+    }
+
+    public void setResponse(ExecutorResponse response) {
+
+        this.response = response;
     }
 }

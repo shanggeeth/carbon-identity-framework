@@ -20,17 +20,23 @@ package org.wso2.carbon.identity.user.registration;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
 import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecutorConfig;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
-import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
-import org.wso2.carbon.identity.user.registration.model.response.CurrentStepResponse;
+import org.wso2.carbon.identity.user.registration.model.response.ExecutorMetadata;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.INCOMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.SELECTION_PENDING;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.MULTI_OPTION;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.SINGLE_OPTION;
 
 public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
 
@@ -48,30 +54,29 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
     }
 
     @Override
-    public CurrentStepResponse handle(RegistrationRequest request, RegistrationContext context) throws RegistrationFrameworkException {
+    public NextStepResponse handle(RegistrationRequest request, RegistrationContext context) throws RegistrationFrameworkException {
 
         RegistrationStep step = context.getRegistrationSequence().getStepMap().get(context.getCurrentStep());
 
-        CurrentStepResponse stepResponse = new CurrentStepResponse();
-        List<ExecutorResponse> executorResponses = new ArrayList<>();
+        NextStepResponse stepResponse = new NextStepResponse();
+        stepResponse.setType(SINGLE_OPTION);
 
         if (step.getSelectedExecutor() == null) {
             List<RegistrationStepExecutorConfig> regExecutors = step.getConfiguredExecutors();
             if (regExecutors.size() == 1) {
-                stepResponse.setType(RegistrationFlowConstants.StepType.SINGLE_OPTION);
                 step.setSelectedExecutor(regExecutors.get(0));
             } else {
                 // Handling multi option steps.
-                if (RegistrationFlowConstants.StepStatus.SELECTION_PENDING.equals(step.getStatus())) {
+                if (SELECTION_PENDING.equals(step.getStatus())) {
                     // It is expected to an executor to be selected in order to continue the registration.
                     RegistrationStepExecutorConfig selectedExecutor = resolveSelectedExecutor(regExecutors, request);
                     step.setSelectedExecutor(selectedExecutor);
                     // Once an executor is selected, it can be considered as a single option and start the flow.
-                    stepResponse.setType(RegistrationFlowConstants.StepType.SINGLE_OPTION);
-                    step.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+                    stepResponse.setType(SINGLE_OPTION);
+                    step.setStatus(INCOMPLETE);
                 } else {
-                    step.setStatus(RegistrationFlowConstants.StepStatus.SELECTION_PENDING);
-                    stepResponse.setType(RegistrationFlowConstants.StepType.MULTI_OPTION);
+                    step.setStatus(SELECTION_PENDING);
+                    stepResponse.setType(MULTI_OPTION);
                     stepResponse.setExecutors(loadMultiOptionsForStep(regExecutors));
                     // Further processing of the step is not possible without selecting an executor.
                     return stepResponse;
@@ -80,39 +85,23 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
         }
 
         RegistrationStepExecutorConfig regExecutor = step.getSelectedExecutor();
-        ExecutorResponse executorResponse;
 
         // If the step is not expecting any user inputs, there's no need to pass the registration request.
-        if (!RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED.equals(step.getStatus())) {
-            executorResponse = regExecutor.getExecutor().execute(null, context, regExecutor);
+        if (!USER_INPUT_REQUIRED.equals(step.getStatus())) {
+            step.setStatus(regExecutor.getExecutor().execute(null, context, stepResponse, regExecutor));
         } else {
-            executorResponse = regExecutor.getExecutor().execute(request, context, regExecutor);
+            step.setStatus(regExecutor.getExecutor().execute(request, context, stepResponse, regExecutor));
         }
-
-        if (executorResponse != null && executorResponse.getStatus() != null ) {
-            step.setStatus(executorResponse.getStatus());
-            if (!RegistrationFlowConstants.StepStatus.COMPLETE.equals(executorResponse.getStatus())){
-                executorResponses.add(executorResponse);
-            }
-        } else {
-            throw new RegistrationFrameworkException("Registration step executor did not handle the request properly");
-        }
-
-        stepResponse.setExecutors(executorResponses);
         return stepResponse;
     }
 
     private RegistrationStepExecutorConfig resolveSelectedExecutor(List<RegistrationStepExecutorConfig> regExecutors,
-                                                             RegistrationRequest request)
-            throws RegistrationFrameworkException {
+                                                                   RegistrationRequest request) throws RegistrationFrameworkException {
 
-        if (!"SELECTION".equals(request.getInputType())) {
-            throw new RegistrationFrameworkException("Registration option selection is expected");
-        }
-        String selectedExecutorName = request.getInputs().get("executorName");
+        String selectedExecutorId = request.getExecutorId();
         RegistrationStepExecutorConfig selectedExecutor = null;
         for (RegistrationStepExecutorConfig regExecutor : regExecutors) {
-            if (regExecutor.getGivenName().equals(selectedExecutorName)) {
+            if (regExecutor.getId().equals(selectedExecutorId)) {
                 selectedExecutor = regExecutor;
             }
         }
@@ -127,10 +116,14 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
         List<ExecutorResponse> executorResponses = new ArrayList<>();
         for (RegistrationStepExecutorConfig regExecutor : regExecutors) {
             ExecutorResponse executorResponse = new ExecutorResponse();
-            executorResponse.setGivenName(regExecutor.getGivenName());
             executorResponse.setName(regExecutor.getName());
-            executorResponse.setId(regExecutor.getGivenName());
+            executorResponse.setExecutorName(regExecutor.getName());
+            executorResponse.setId(regExecutor.getId());
             executorResponses.add(executorResponse);
+
+            ExecutorMetadata meta = new ExecutorMetadata();
+            meta.setI18nKey("executor." + regExecutor.getName());
+            executorResponse.setMetadata(meta);
         }
         return executorResponses;
     }

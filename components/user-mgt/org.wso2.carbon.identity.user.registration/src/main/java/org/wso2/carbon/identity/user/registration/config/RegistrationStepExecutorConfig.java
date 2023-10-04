@@ -31,23 +31,12 @@ import java.util.Map;
  */
 public class RegistrationStepExecutorConfig {
 
-    private String givenName;
     private String id;
     private String name;
     private RegistrationStepExecutor executor;
     private IdentityProvider identityProvider;
     private Map<String, String> properties = new HashMap<>();
     private ClaimMapping[] requestedClaims;
-
-    public String getGivenName() {
-
-        return givenName;
-    }
-
-    public void setGivenName(String givenName) {
-
-        this.givenName = givenName;
-    }
 
     public String getId() {
 

@@ -21,10 +21,10 @@ package org.wso2.carbon.identity.user.registration;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
-import org.wso2.carbon.identity.user.registration.model.response.CurrentStepResponse;
+import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
 
 public interface RegistrationStepHandler {
 
-    CurrentStepResponse handle(RegistrationRequest request, RegistrationContext context) throws RegistrationFrameworkException;
+    NextStepResponse handle(RegistrationRequest request, RegistrationContext context) throws RegistrationFrameworkException;
 
 }

@@ -24,13 +24,23 @@ import org.wso2.carbon.identity.user.registration.exception.RegistrationFramewor
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequestedUser;
+import org.wso2.carbon.identity.user.registration.model.response.ExecutorMetadata;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
+import org.wso2.carbon.identity.user.registration.model.response.Message;
+import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.RegistrationExecutorBindingType;
+import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.RegistrationExecutorBindingType.NONE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.COMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.INCOMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED;
 
 public class AttributeCollectionRegStepExecutor implements RegistrationStepExecutor {
 
@@ -48,9 +58,9 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
     }
 
     @Override
-    public RegistrationFlowConstants.RegistrationExecutorBindingType getBindingType() throws RegistrationFrameworkException {
+    public RegistrationExecutorBindingType getBindingType() throws RegistrationFrameworkException {
 
-        return RegistrationFlowConstants.RegistrationExecutorBindingType.NONE;
+        return NONE;
     }
 
     @Override
@@ -66,18 +76,13 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
     }
 
     @Override
-    public ExecutorResponse execute(RegistrationRequest registrationRequest, RegistrationContext context, RegistrationStepExecutorConfig config)
+    public StepStatus execute(RegistrationRequest registrationRequest, RegistrationContext context,
+                              NextStepResponse response, RegistrationStepExecutorConfig config)
             throws RegistrationFrameworkException {
-
-        ExecutorResponse response = new ExecutorResponse();
-        response.setGivenName(config.getGivenName());
-        response.setName(this.getName());
-        response.setId(config.getId());
 
         if ( registrationRequest == null || registrationRequest.getInputs() == null ) {
 
-            context.getRegistrationSequence().getStepMap().get(context.getCurrentStep()).setStatus(
-                    RegistrationFlowConstants.StepStatus.INCOMPLETE);
+            context.getRegistrationSequence().getStepMap().get(context.getCurrentStep()).setStatus(INCOMPLETE);
 
             List<RequiredParam> params = new ArrayList<>();
 
@@ -94,8 +99,13 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
                 params.add(param);
             }
 
-            response.setStatus(RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED);
-            response.setRequiredParams(params);
+            Message message = new Message();
+            message.setMessage("User input required");
+            message.setType(RegistrationFlowConstants.MessageType.INFO);
+
+            updateResponse(response, config, params, message);
+
+            return USER_INPUT_REQUIRED;
         } else if (registrationRequest.getInputs() != null) {
 
             Map<String, String> inputs = registrationRequest.getInputs();
@@ -105,16 +115,34 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
                 context.setRegisteringUser(user);
             }
 
-            if (inputs.get("username") != null) {
-                user.setUsername(inputs.get("username"));
+            if (inputs.get("http://wso2.org/claims/username") != null) {
+                user.setUsername(inputs.get("http://wso2.org/claims/username"));
             }
             if (user.getClaims() != null) {
                 user.getClaims().putAll(inputs);
             } else {
                 user.setClaims(inputs);
             }
-            response.setStatus(RegistrationFlowConstants.StepStatus.COMPLETE);
+        return COMPLETE;
         }
-        return response;
+        return INCOMPLETE;
+    }
+
+    private void updateResponse(NextStepResponse response, RegistrationStepExecutorConfig config,
+                                List<RequiredParam> params, Message message) {
+
+        ExecutorResponse executorResponse = new ExecutorResponse();
+        executorResponse.setName(config.getName());
+        executorResponse.setExecutorName(this.getName());
+        executorResponse.setId(config.getId());
+
+        ExecutorMetadata metadata = new ExecutorMetadata();
+        metadata.setI18nKey("executor.attributeCollection");
+        metadata.setPromptType(RegistrationFlowConstants.PromptType.USER_PROMPT);
+        metadata.setRequiredParams(params);
+        executorResponse.setMetadata(metadata);
+
+        response.addExecutor(executorResponse);
+        response.addMessage(message);
     }
 }
