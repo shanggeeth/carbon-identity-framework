@@ -78,6 +78,6 @@ public class RegistrationFlowConstants {
      */
     public enum StepStatus {
 
-        COMPLETE, INCOMPLETE, SELECTION_PENDING, USER_INPUT_REQUIRED
+        NOT_STARTED, COMPLETE, INCOMPLETE, SELECTION_PENDING, USER_INPUT_REQUIRED
     }
 }

@@ -40,6 +40,7 @@ import java.util.Map;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.RegistrationExecutorBindingType.NONE;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.COMPLETE;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.INCOMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED;
 
 public class AttributeCollectionRegStepExecutor implements RegistrationStepExecutor {
@@ -75,12 +76,20 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
         return "AttributeCollectorType";
     }
 
+    public List<RequiredParam> getRequiredParams() {
+
+        return null;
+    }
+
     @Override
     public StepStatus execute(RegistrationRequest registrationRequest, RegistrationContext context,
                               NextStepResponse response, RegistrationStepExecutorConfig config)
             throws RegistrationFrameworkException {
 
-        if ( registrationRequest == null || registrationRequest.getInputs() == null ) {
+        RegistrationFlowConstants.StepStatus status = context.getRegistrationSequence().getStepMap()
+                .get(context.getCurrentStep()).getStatus();
+
+        if (NOT_STARTED.equals(status) ) {
 
             context.getRegistrationSequence().getStepMap().get(context.getCurrentStep()).setStatus(INCOMPLETE);
 
@@ -106,7 +115,7 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
             updateResponse(response, config, params, message);
 
             return USER_INPUT_REQUIRED;
-        } else if (registrationRequest.getInputs() != null) {
+        } else if (USER_INPUT_REQUIRED.equals(status) && registrationRequest.getInputs() != null) {
 
             Map<String, String> inputs = registrationRequest.getInputs();
             RegistrationRequestedUser user =  context.getRegisteringUser();

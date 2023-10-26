@@ -28,11 +28,14 @@ import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorMetadata;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
 import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
+import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
+import org.wso2.carbon.identity.user.registration.util.RegistrationFrameworkUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.INCOMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.SELECTION_PENDING;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.MULTI_OPTION;
@@ -73,11 +76,11 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
                     step.setSelectedExecutor(selectedExecutor);
                     // Once an executor is selected, it can be considered as a single option and start the flow.
                     stepResponse.setType(SINGLE_OPTION);
-                    step.setStatus(INCOMPLETE);
+                    step.setStatus(NOT_STARTED);
                 } else {
                     step.setStatus(SELECTION_PENDING);
                     stepResponse.setType(MULTI_OPTION);
-                    stepResponse.setExecutors(loadMultiOptionsForStep(regExecutors));
+                    stepResponse.setExecutors(loadMultiOptionsForStep(context, regExecutors));
                     // Further processing of the step is not possible without selecting an executor.
                     return stepResponse;
                 }
@@ -87,11 +90,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
         RegistrationStepExecutorConfig regExecutor = step.getSelectedExecutor();
 
         // If the step is not expecting any user inputs, there's no need to pass the registration request.
-        if (!USER_INPUT_REQUIRED.equals(step.getStatus())) {
-            step.setStatus(regExecutor.getExecutor().execute(null, context, stepResponse, regExecutor));
-        } else {
-            step.setStatus(regExecutor.getExecutor().execute(request, context, stepResponse, regExecutor));
-        }
+        step.setStatus(regExecutor.getExecutor().execute(request, context, stepResponse, regExecutor));
         return stepResponse;
     }
 
@@ -111,7 +110,8 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
         return selectedExecutor;
     }
 
-    private List<ExecutorResponse> loadMultiOptionsForStep(List<RegistrationStepExecutorConfig> regExecutors) {
+    private List<ExecutorResponse> loadMultiOptionsForStep(RegistrationContext context,
+                                                           List<RegistrationStepExecutorConfig> regExecutors) {
 
         List<ExecutorResponse> executorResponses = new ArrayList<>();
         for (RegistrationStepExecutorConfig regExecutor : regExecutors) {
@@ -123,6 +123,11 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
 
             ExecutorMetadata meta = new ExecutorMetadata();
             meta.setI18nKey("executor." + regExecutor.getName());
+
+            List<RequiredParam> params = regExecutor.getExecutor().getRequiredParams();
+            RegistrationFrameworkUtils.updateAvailableValuesForRequiredParams(context, params);
+
+            meta.setRequiredParams(params);
             executorResponse.setMetadata(meta);
         }
         return executorResponses;

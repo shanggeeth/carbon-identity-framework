@@ -26,6 +26,7 @@ import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants
 public class RequiredParam {
 
     private String name;
+    private String availableValue;
     private RegistrationFlowConstants.DataType dataType;
     private boolean isConfidential;
     private boolean isMandatory;
@@ -41,6 +42,16 @@ public class RequiredParam {
     public void setName(String name) {
 
         this.name = name;
+    }
+
+    public String getAvailableValue() {
+
+        return availableValue;
+    }
+
+    public void setAvailableValue(String availableValue) {
+
+        this.availableValue = availableValue;
     }
 
     public RegistrationFlowConstants.DataType getDataType() {

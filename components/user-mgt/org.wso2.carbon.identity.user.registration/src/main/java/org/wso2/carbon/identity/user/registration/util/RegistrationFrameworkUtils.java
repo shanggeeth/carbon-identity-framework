@@ -43,7 +43,9 @@ import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecuto
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.internal.UserRegistrationServiceDataHolder;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
+import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequestedUser;
+import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 import org.wso2.carbon.idp.mgt.IdentityProviderManager;
 import org.wso2.carbon.user.api.UserStoreException;
@@ -56,6 +58,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
 
 public class RegistrationFrameworkUtils {
 
@@ -149,7 +153,7 @@ public class RegistrationFrameworkUtils {
         step1.setOrder(1);
         step1.setMultiOption(false);
         step1.setSelectedExecutor(null);
-        step1.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+        step1.setStatus(NOT_STARTED);
 
         List<RegistrationStepExecutorConfig> executors = new ArrayList<>();
         executors.add(buildAttributeCollector1());
@@ -159,7 +163,7 @@ public class RegistrationFrameworkUtils {
         step2.setOrder(2);
         step2.setMultiOption(false);
         step2.setSelectedExecutor(null);
-        step2.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+        step2.setStatus(NOT_STARTED);
 
         List<RegistrationStepExecutorConfig> executors2 = new ArrayList<>();
         executors2.add(buildPasswordOnboarder());
@@ -169,7 +173,7 @@ public class RegistrationFrameworkUtils {
         step3.setOrder(2);
         step3.setMultiOption(false);
         step3.setSelectedExecutor(null);
-        step3.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+        step3.setStatus(NOT_STARTED);
 
         List<RegistrationStepExecutorConfig> executors3 = new ArrayList<>();
         executors3.add(buildEmailOTPVerifier());
@@ -193,7 +197,7 @@ public class RegistrationFrameworkUtils {
         step1.setOrder(1);
         step1.setMultiOption(false);
         step1.setSelectedExecutor(null);
-        step1.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+        step1.setStatus(NOT_STARTED);
 
         List<RegistrationStepExecutorConfig> executors = new ArrayList<>();
         executors.add(buildAttributeCollector1());
@@ -203,7 +207,7 @@ public class RegistrationFrameworkUtils {
         step2.setOrder(2);
         step2.setMultiOption(true);
         step2.setSelectedExecutor(null);
-        step2.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+        step2.setStatus(NOT_STARTED);
 
         List<RegistrationStepExecutorConfig> executors2 = new ArrayList<>();
         executors2.add(buildPasswordOnboarder());
@@ -214,7 +218,7 @@ public class RegistrationFrameworkUtils {
         step3.setOrder(2);
         step3.setMultiOption(false);
         step3.setSelectedExecutor(null);
-        step3.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+        step3.setStatus(NOT_STARTED);
 
         List<RegistrationStepExecutorConfig> executors3 = new ArrayList<>();
         executors3.add(buildAttributeCollector2());
@@ -238,7 +242,7 @@ public class RegistrationFrameworkUtils {
         step1.setOrder(1);
         step1.setMultiOption(false);
         step1.setSelectedExecutor(null);
-        step1.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+        step1.setStatus(NOT_STARTED);
 
         List<RegistrationStepExecutorConfig> executors = new ArrayList<>();
         executors.add(buildAttributeCollector1());
@@ -248,7 +252,7 @@ public class RegistrationFrameworkUtils {
         step2.setOrder(2);
         step2.setMultiOption(true);
         step2.setSelectedExecutor(null);
-        step2.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+        step2.setStatus(NOT_STARTED);
 
         List<RegistrationStepExecutorConfig> executors2 = new ArrayList<>();
         executors2.add(buildPasswordOnboarder());
@@ -259,7 +263,7 @@ public class RegistrationFrameworkUtils {
         step3.setOrder(2);
         step3.setMultiOption(false);
         step3.setSelectedExecutor(null);
-        step3.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+        step3.setStatus(NOT_STARTED);
 
         List<RegistrationStepExecutorConfig> executors3 = new ArrayList<>();
         executors3.add(buildEmailOTPVerifier());
@@ -420,16 +424,17 @@ public class RegistrationFrameworkUtils {
 
         int stepOrder = 0;
 
-        RegistrationStep step1 = new RegistrationStep();
-        step1.setOrder(++stepOrder);
-        step1.setMultiOption(false);
-        step1.setSelectedExecutor(null);
-        step1.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+        // No need to specifically have a step for attribute collection.
 
-        List<RegistrationStepExecutorConfig> executors = new ArrayList<>();
-        executors.add(buildAttributeCollector1());
-        step1.setConfiguredExecutors(executors);
-        sequenceConfig.getStepMap().put(step1.getOrder(), step1);
+//        RegistrationStep step1 = new RegistrationStep();
+//        step1.setOrder(++stepOrder);
+//        step1.setMultiOption(false);
+//        step1.setSelectedExecutor(null);
+//        step1.setStatus(NOT_STARTED);
+//        List<RegistrationStepExecutorConfig> executors = new ArrayList<>();
+//        executors.add(buildAttributeCollector1());
+//        step1.setConfiguredExecutors(executors);
+//        sequenceConfig.getStepMap().put(step1.getOrder(), step1);
 
         if (authenticationSteps == null) {
             return sequenceConfig;
@@ -442,7 +447,7 @@ public class RegistrationFrameworkUtils {
 //            RegistrationStep stepConfig = loadExecutors(authenticationStep);
 //
 //            if (stepConfig != null) {
-//                stepConfig.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+//                stepConfig.setStatus(NOT_STARTED);
 //                stepConfig.setOrder(++stepOrder);
 //                sequenceConfig.getStepMap().put(stepConfig.getOrder(), stepConfig);
 //            }
@@ -453,9 +458,16 @@ public class RegistrationFrameworkUtils {
         RegistrationStep stepConfig = loadExecutors(firstStep);
 
         if (stepConfig != null) {
-            stepConfig.setStatus(RegistrationFlowConstants.StepStatus.INCOMPLETE);
+            stepConfig.setStatus(NOT_STARTED);
             stepConfig.setOrder(++stepOrder);
             sequenceConfig.getStepMap().put(stepConfig.getOrder(), stepConfig);
+        }
+        RegistrationStep attributeCollectStep = generateAttributeCollectionStep(serviceProvider);
+
+        if (attributeCollectStep != null) {
+            attributeCollectStep.setStatus(NOT_STARTED);
+            attributeCollectStep.setOrder(++stepOrder);
+            sequenceConfig.getStepMap().put(attributeCollectStep.getOrder(), attributeCollectStep);
         }
         return sequenceConfig;
     }
@@ -537,5 +549,41 @@ public class RegistrationFrameworkUtils {
         regStepConfig.setIdentityProvider(getIdentityProvider(idpName));
 
         return regStepConfig;
+    }
+
+    public static void updateAvailableValuesForRequiredParams(RegistrationContext context, List<RequiredParam> params) {
+
+        Map<String, String> userData = context.getRegisteringUser().getClaims();
+        if (userData != null && params != null && params.size() > 0) {
+            for (RequiredParam param : params) {
+                if (userData.get(param.getName()) != null  ) {
+                    param.setAvailableValue(userData.get(param.getName()));
+                }
+            }
+        }
+    }
+
+    public static RegistrationStep generateAttributeCollectionStep(ServiceProvider serviceProvider) {
+
+        ClaimMapping[] requestedClaims = serviceProvider.getClaimConfig().getClaimMappings();
+
+        if (requestedClaims == null || requestedClaims.length == 0) {
+            return null;
+        }
+        RegistrationStepExecutorConfig config = new RegistrationStepExecutorConfig();
+        config.setName("AttributeCollector");
+        config.setId("AttributeCollectorBasedOnAppClaims");
+        config.setRequestedClaims(requestedClaims);
+        config.setExecutor(getRegStepExecutor("AttributeCollector"));
+
+        List<RegistrationStepExecutorConfig> executors = new ArrayList<>();
+        executors.add(config);
+
+        RegistrationStep step = new RegistrationStep();
+        step.setMultiOption(false);
+        step.setSelectedExecutor(null);
+        step.setConfiguredExecutors(executors);
+
+        return step;
     }
 }

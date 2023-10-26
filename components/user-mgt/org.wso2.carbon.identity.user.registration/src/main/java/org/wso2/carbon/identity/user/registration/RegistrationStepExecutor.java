@@ -23,8 +23,11 @@ import org.wso2.carbon.identity.user.registration.exception.RegistrationFramewor
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
+import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus;
+
+import java.util.List;
 
 public interface RegistrationStepExecutor {
 
@@ -39,4 +42,5 @@ public interface RegistrationStepExecutor {
     StepStatus execute(RegistrationRequest request, RegistrationContext context, NextStepResponse response,
                                                  RegistrationStepExecutorConfig config) throws RegistrationFrameworkException;
 
+    List<RequiredParam> getRequiredParams();
 }

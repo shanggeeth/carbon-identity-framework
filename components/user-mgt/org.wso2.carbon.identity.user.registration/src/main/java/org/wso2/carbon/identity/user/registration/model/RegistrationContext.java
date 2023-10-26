@@ -19,10 +19,13 @@
 package org.wso2.carbon.identity.user.registration.model;
 
 import org.wso2.carbon.identity.user.registration.config.RegistrationSequence;
+import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RegistrationContext implements Serializable {
@@ -34,8 +37,9 @@ public class RegistrationContext implements Serializable {
     private String tenantDomain;
     private String requestType;
     private String relyingParty;
-    private RegistrationRequestedUser registeringUser;
+    private RegistrationRequestedUser registeringUser = new RegistrationRequestedUser();
     private RegistrationSequence registrationSequence;
+    private List<RequiredParam> requestedParameters;
     private boolean isCompleted;
     private Map<String, Object> properties = new HashMap<>();
 
@@ -130,10 +134,27 @@ public class RegistrationContext implements Serializable {
     }
 
     public Object getProperty(String key) {
+
         return this.properties.get(key);
     }
 
     public void setProperty(String key, Object value) {
+
         this.properties.put(key, value);
+    }
+
+    public List<RequiredParam> getRequestedParameters() {
+
+        return this.requestedParameters;
+    }
+
+    public void updateRequestedParameterList(List<RequiredParam> newParamList) {
+
+        if (this.requestedParameters == null) {
+            this.requestedParameters = new ArrayList<>();
+        } else {
+            this.requestedParameters.clear();
+        }
+        this.requestedParameters.addAll(newParamList);
     }
 }
