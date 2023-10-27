@@ -42,6 +42,8 @@ import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowCo
 public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecutor {
 
     private static PasswordOnboardingRegStepExecutor instance = new PasswordOnboardingRegStepExecutor();
+    private static final String PASSWORD = "password";
+    private static final String USERNAME_URI = "http://wso2.org/claims/username";
 
     public static PasswordOnboardingRegStepExecutor getInstance() {
 
@@ -77,7 +79,7 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
 
         List<RequiredParam> params = new ArrayList<>();
         RequiredParam param1 = new RequiredParam();
-        param1.setName("http://wso2.org/claims/username");
+        param1.setName(USERNAME_URI);
         param1.setAvailableValue(null);
         param1.setConfidential(false);
         param1.setMandatory(true);
@@ -93,43 +95,35 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
 
         RegistrationFlowConstants.StepStatus status = context.getRegistrationSequence().getStepMap()
                 .get(context.getCurrentStep()).getStatus();
-        if (NOT_STARTED.equals(status)) {
-            RegistrationRequestedUser user = context.getRegisteringUser();
+        RegistrationRequestedUser user = context.getRegisteringUser();
 
-            if (user.getUsername() == null ) {
-
+        if (user.getUsername() == null) {
+            if (NOT_STARTED.equals(status)) {
                 Map<String, String> inputs = request.getInputs();
-                if (inputs.get("http://wso2.org/claims/username") != null) {
-                    user.setUsername(inputs.get("http://wso2.org/claims/username"));
-                    return processPassword(request, context, status, response, config);
+                if (inputs != null && inputs.get(USERNAME_URI) != null) {
+                    user.setUsername(inputs.get(USERNAME_URI));
                 } else {
                     Message message = new Message();
                     message.setMessage("Define a username");
                     message.setType(RegistrationFlowConstants.MessageType.INFO);
-
                     updateResponse(response, config, this.getRequiredParams(), message);
                     context.updateRequestedParameterList(this.getRequiredParams());
                     return USER_INPUT_REQUIRED;
                 }
-            }
-        } else if (USER_INPUT_REQUIRED.equals(status)) {
-
-            List<RequiredParam> requestedParameters = context.getRequestedParameters();
-
-            for (RequiredParam param : requestedParameters) {
-                if ("http://wso2.org/claims/username".equals(param.getName())) {
-                    RegistrationRequestedUser user = context.getRegisteringUser();
-                    user.setUsername(request.getInputs().get("http://wso2.org/claims/username"));
-                    status = INCOMPLETE;
-                    return processPassword(request, context, status, response, config);
-                } else if ("password".equals(param.getName())) {
-                    return processPassword(request, context, status, response, config);
+            } else if (USER_INPUT_REQUIRED.equals(status)) {
+                Map<String, String> inputs = request.getInputs();
+                if (inputs != null && inputs.get("http://wso2.org/claims/username") != null) {
+                    user.setUsername(inputs.get("http://wso2.org/claims/username"));
                 } else {
-                    throw new RegistrationFrameworkException("Invalid parameter requested");
+                    throw new RegistrationFrameworkException("Username is not defined");
                 }
+                status = INCOMPLETE;
             }
         }
-        return INCOMPLETE;
+        if (USER_INPUT_REQUIRED.equals(status)) {
+            return processPassword(request, context);
+        }
+        return requestPassword(response, config);
     }
 
     private void updateResponse(NextStepResponse response, RegistrationStepExecutorConfig config,
@@ -151,12 +145,8 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
     }
 
     private RegistrationFlowConstants.StepStatus processPassword(RegistrationRequest request,
-                                                                 RegistrationContext context,
-                                                                 RegistrationFlowConstants.StepStatus status,
-                                                                 NextStepResponse response,
-                                                                 RegistrationStepExecutorConfig config) throws RegistrationFrameworkException {
+                                                                 RegistrationContext context) throws RegistrationFrameworkException {
 
-        if (USER_INPUT_REQUIRED.equals(status)) {
             Map<String, String> inputs = request.getInputs();
             RegistrationRequestedUser user = context.getRegisteringUser();
 
@@ -166,7 +156,11 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
             user.setPasswordless(false);
             user.setCredential(inputs.get("password"));
             return COMPLETE;
-        }
+    }
+
+    private RegistrationFlowConstants.StepStatus requestPassword(NextStepResponse response,
+                                                                 RegistrationStepExecutorConfig config) {
+
         List<RequiredParam> params = new ArrayList<>();
         RequiredParam param1 = new RequiredParam();
         param1.setName("password");

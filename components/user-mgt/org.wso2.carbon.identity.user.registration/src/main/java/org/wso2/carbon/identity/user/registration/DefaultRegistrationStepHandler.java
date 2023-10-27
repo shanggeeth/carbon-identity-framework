@@ -89,7 +89,6 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
 
         RegistrationStepExecutorConfig regExecutor = step.getSelectedExecutor();
 
-        // If the step is not expecting any user inputs, there's no need to pass the registration request.
         step.setStatus(regExecutor.getExecutor().execute(request, context, stepResponse, regExecutor));
         return stepResponse;
     }

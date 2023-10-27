@@ -43,7 +43,7 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
         RegistrationContext context = RegistrationFrameworkUtils.initiateRegContext(appId, type);
         DefaultRegistrationSequenceHandler handler = DefaultRegistrationSequenceHandler.getInstance();
 
-        RegistrationResponse response = handler.handle(null, context);
+        RegistrationResponse response = handler.handle(new RegistrationRequest(), context);
         RegistrationFrameworkUtils.addRegContextToCache(context);
         return response;
     }
