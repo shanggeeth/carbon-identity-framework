@@ -99,6 +99,10 @@ public class ApplicationConstants {
     // Application Management Service Configurations.
     public static final String ENABLE_APPLICATION_ROLE_VALIDATION_PROPERTY = "ApplicationMgt.EnableRoleValidation";
 
+    // Console and My Account application names.
+    public static final String CONSOLE_APPLICATION_NAME = "Console";
+    public static final String MY_ACCOUNT_APPLICATION_NAME = "My Account";
+
     /**
      * Group the constants related to logs.
      */
@@ -146,6 +150,11 @@ public class ApplicationConstants {
         public static final String UUID = "UUID";
         public static final String IMAGE_URL = "IMAGE_URL";
         public static final String ACCESS_URL = "ACCESS_URL";
+        public static final String APP_ID = "APP_ID";
+        public static final String API_ID = "API_ID";
+        public static final String POLICY_ID = "POLICY_ID";
+        public static final String SCOPE_NAME = "SCOPE_NAME";
+        public static final String MAIN_APP_ID = "MAIN_APP_ID";
 
         private ApplicationTableColumns() {
 

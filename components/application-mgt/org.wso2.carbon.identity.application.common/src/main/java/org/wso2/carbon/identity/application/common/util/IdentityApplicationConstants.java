@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2014, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2014-2023, WSO2 LLC. (http://www.wso2.com).
  *
- * WSO2 Inc. licenses this file to you under the Apache License,
+ * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
@@ -114,6 +114,9 @@ public class IdentityApplicationConstants {
     public static final String LOCAL_SP = "wso2carbon-local-sp";
 
     public static final String SP_NAME = "spName";
+
+    public static final String ALLOWED_ROLE_AUDIENCE_PROPERTY_NAME = "allowedAudienceForAssociatedRoles";
+    public static final String ALLOWED_ROLE_AUDIENCE_REQUEST_ATTRIBUTE_NAME = "associatedRoles.allowedAudience";
 
     /**
      * Config elements.

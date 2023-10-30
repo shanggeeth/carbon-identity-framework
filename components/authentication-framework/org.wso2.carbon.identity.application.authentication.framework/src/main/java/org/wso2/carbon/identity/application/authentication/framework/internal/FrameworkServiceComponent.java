@@ -57,6 +57,7 @@ import org.wso2.carbon.identity.application.authentication.framework.dao.impl.Ca
 import org.wso2.carbon.identity.application.authentication.framework.dao.impl.LongWaitStatusDAOImpl;
 import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
 import org.wso2.carbon.identity.application.authentication.framework.handler.approles.ApplicationRolesResolver;
+import org.wso2.carbon.identity.application.authentication.framework.handler.approles.impl.AppAssociatedRolesResolverImpl;
 import org.wso2.carbon.identity.application.authentication.framework.handler.claims.ClaimFilter;
 import org.wso2.carbon.identity.application.authentication.framework.handler.claims.impl.DefaultClaimFilter;
 import org.wso2.carbon.identity.application.authentication.framework.handler.provisioning.listener.JITProvisioningIdentityProviderMgtListener;
@@ -110,7 +111,7 @@ import org.wso2.carbon.identity.functions.library.mgt.FunctionLibraryManagementS
 import org.wso2.carbon.identity.multi.attribute.login.mgt.MultiAttributeLoginService;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManagementInitialize;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
-import org.wso2.carbon.identity.organization.management.service.OrganizationUserResidentResolverService;
+import org.wso2.carbon.identity.role.v2.mgt.core.RoleManagementService;
 import org.wso2.carbon.identity.user.profile.mgt.association.federation.FederatedAssociationManager;
 import org.wso2.carbon.idp.mgt.IdpManager;
 import org.wso2.carbon.idp.mgt.listener.IdentityProviderMgtListener;
@@ -212,6 +213,9 @@ public class FrameworkServiceComponent {
         bundleContext.registerService(HttpIdentityResponseFactory.class.getName(),
                 new SessionExtenderResponseFactory(), null);
         bundleContext.registerService(IdentityProcessor.class.getName(), new SessionExtenderProcessor(), null);
+
+        bundleContext.registerService(ApplicationRolesResolver.class.getName(), new AppAssociatedRolesResolverImpl(),
+                null);
 
         ServerSessionManagementService serverSessionManagementService = new ServerSessionManagementServiceImpl();
         bundleContext.registerService(ServerSessionManagementService.class.getName(),
@@ -1012,6 +1016,21 @@ public class FrameworkServiceComponent {
         FrameworkServiceDataHolder.getInstance().setApplicationManagementService(null);
     }
 
+    @Reference(name = "identity.organization.management.component",
+            service = OrganizationManager.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetOrganizationManager")
+    protected void setOrganizationManager(OrganizationManager organizationManager) {
+
+        FrameworkServiceDataHolder.getInstance().setOrganizationManager(organizationManager);
+    }
+
+    protected void unsetOrganizationManager(OrganizationManager organizationManager) {
+
+        FrameworkServiceDataHolder.getInstance().setOrganizationManager(null);
+    }
+
     @Reference(
             name = "resource.configuration.manager",
             service = ConfigurationManager.class,
@@ -1035,40 +1054,21 @@ public class FrameworkServiceComponent {
         FrameworkServiceDataHolder.getInstance().setConfigurationManager(null);
     }
 
-    @Reference(name = "identity.organization.management.component",
-            service = OrganizationManager.class,
-            cardinality = ReferenceCardinality.MANDATORY,
-            policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetOrganizationManager")
-    protected void setOrganizationManager(OrganizationManager organizationManager) {
-
-        FrameworkServiceDataHolder.getInstance().setOrganizationManager(organizationManager);
-    }
-
-    protected void unsetOrganizationManager(OrganizationManager organizationManager) {
-
-        FrameworkServiceDataHolder.getInstance().setOrganizationManager(null);
-    }
-
     @Reference(
-            name = "organization.user.resident.resolver.service",
-            service = OrganizationUserResidentResolverService.class,
+            name = "org.wso2.carbon.identity.role.v2.mgt.core.RoleManagementService",
+            service = org.wso2.carbon.identity.role.v2.mgt.core.RoleManagementService.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetOrganizationUserResidentResolverService"
-    )
-    protected void setOrganizationUserResidentResolverService(
-            OrganizationUserResidentResolverService organizationUserResidentResolverService) {
+            unbind = "unsetRoleManagementServiceV2")
+    protected void setRoleManagementServiceV2(RoleManagementService roleManagementService) {
 
-        log.debug("Setting the organization user resident resolver service.");
-        FrameworkServiceDataHolder.getInstance().setOrganizationUserResidentResolverService(
-                organizationUserResidentResolverService);
+        FrameworkServiceDataHolder.getInstance().setRoleManagementServiceV2(roleManagementService);
+        log.debug("RoleManagementServiceV2 set in FrameworkServiceComponent bundle.");
     }
 
-    protected void unsetOrganizationUserResidentResolverService(
-            OrganizationUserResidentResolverService organizationUserResidentResolverService) {
+    protected void unsetRoleManagementServiceV2(RoleManagementService roleManagementService) {
 
-        log.debug("Unset organization user resident resolver service.");
-        FrameworkServiceDataHolder.getInstance().setOrganizationUserResidentResolverService(null);
+        FrameworkServiceDataHolder.getInstance().setRoleManagementServiceV2(null);
+        log.debug("RoleManagementServiceV2 unset in FrameworkServiceComponent bundle.");
     }
 }

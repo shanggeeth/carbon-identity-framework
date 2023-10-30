@@ -91,6 +91,8 @@ public class AuthenticationService {
 
         AuthServiceResponse authServiceResponse = new AuthServiceResponse();
 
+        /* This order of flow checking should be maintained as some of the
+         error flows could come with flow status INCOMPLETE.*/
         if (isAuthFlowSuccessful(request)) {
             handleSuccessAuthResponse(request, response, authServiceResponse);
         } else if (isAuthFlowFailed(request, response)) {
@@ -107,7 +109,7 @@ public class AuthenticationService {
     private void handleIntermediateAuthResponse(AuthServiceRequestWrapper request, AuthServiceResponseWrapper response,
                                                 AuthServiceResponse authServiceResponse) throws AuthServiceException {
 
-        authServiceResponse.setSessionDataKey(response.getSessionDataKey());
+        authServiceResponse.setSessionDataKey(request.getSessionDataKey());
         authServiceResponse.setFlowStatus(AuthServiceConstants.FlowStatus.INCOMPLETE);
         AuthServiceResponseData responseData = new AuthServiceResponseData();
         boolean isMultiOptionsResponse = request.isMultiOptionsResponse();
@@ -115,7 +117,8 @@ public class AuthenticationService {
         List<AuthenticatorData> authenticatorDataList;
         if (isMultiOptionsResponse) {
             responseData.setAuthenticatorSelectionRequired(true);
-            authenticatorDataList = getAuthenticatorBasicData(response.getAuthenticators());
+            authenticatorDataList = getAuthenticatorBasicData(response.getAuthenticators(),
+                    request.getAuthInitiationData());
         } else {
             authenticatorDataList = request.getAuthInitiationData();
         }
@@ -133,19 +136,18 @@ public class AuthenticationService {
     private void handleFailedAuthResponse(AuthServiceRequestWrapper request, AuthServiceResponseWrapper response,
                                           AuthServiceResponse authServiceResponse) throws AuthServiceException {
 
-        // TODO: Improve error handling. Different authenticator seems to pass errors in slightly different ways.
         String errorCode = null;
         String errorMessage = null;
         if (request.isAuthFlowConcluded()) {
-            authServiceResponse.setSessionDataKey(getFlowCompletionSessionDataKey(request, response));
+            authServiceResponse.setSessionDataKey(request.getSessionDataKey());
             authServiceResponse.setFlowStatus(AuthServiceConstants.FlowStatus.FAIL_COMPLETED);
-            AuthenticationResult authenticationResult = getAuthenticationResult(request, response);
+            AuthenticationResult authenticationResult = getAuthenticationResult(request);
             if (authenticationResult != null) {
                 errorCode = (String) authenticationResult.getProperty(FrameworkConstants.AUTH_ERROR_CODE);
                 errorMessage = (String) authenticationResult.getProperty(FrameworkConstants.AUTH_ERROR_MSG);
             }
         } else {
-            authServiceResponse.setSessionDataKey(response.getSessionDataKey());
+            authServiceResponse.setSessionDataKey(request.getSessionDataKey());
             authServiceResponse.setFlowStatus(AuthServiceConstants.FlowStatus.FAIL_INCOMPLETE);
             List<AuthenticatorData> authenticatorDataList = request.getAuthInitiationData();
             AuthServiceResponseData responseData = new AuthServiceResponseData(authenticatorDataList);
@@ -178,7 +180,9 @@ public class AuthenticationService {
         return queryParams.get(AuthServiceConstants.AUTH_FAILURE_MSG_PARAM);
     }
 
-    private List<AuthenticatorData> getAuthenticatorBasicData(String authenticatorList) throws AuthServiceException {
+    private List<AuthenticatorData> getAuthenticatorBasicData(String authenticatorList,
+                                                              List<AuthenticatorData> authInitiationData)
+            throws AuthServiceException {
 
         List<AuthenticatorData> authenticatorDataList = new ArrayList<>();
         String[] authenticatorAndIdpsArr = StringUtils.split(authenticatorList,
@@ -187,6 +191,14 @@ public class AuthenticationService {
             String[] authenticatorIdpSeperatedArr = StringUtils.split(authenticatorAndIdps,
                     AuthServiceConstants.AUTHENTICATOR_IDP_SEPARATOR);
             String name = authenticatorIdpSeperatedArr[0];
+
+            // Some authentication options would directly send the complete data. ex: basic authenticator.
+            AuthenticatorData authenticatorData = getAuthenticatorData(name, authInitiationData);
+            if (authenticatorData != null) {
+                authenticatorDataList.add(authenticatorData);
+                continue;
+            }
+
             ApplicationAuthenticator authenticator = FrameworkUtils.getAppAuthenticatorByName(name);
             if (authenticator == null) {
                 throw new AuthServiceException("Authenticator not found for name: " + name);
@@ -198,18 +210,30 @@ public class AuthenticationService {
                 }
                 continue;
             }
+
             // The first element is the authenticator name hence its skipped to get the idp.
             for (int i = 1; i < authenticatorIdpSeperatedArr.length; i++) {
                 String idp = authenticatorIdpSeperatedArr[i];
-                AuthenticatorData authenticatorData = new AuthenticatorData();
+                authenticatorData = new AuthenticatorData();
                 authenticatorData.setName(name);
                 authenticatorData.setIdp(idp);
                 authenticatorData.setDisplayName(authenticator.getFriendlyName());
-
+                authenticatorData.setI18nKey(authenticator.getI18nKey());
                 authenticatorDataList.add(authenticatorData);
             }
         }
         return authenticatorDataList;
+    }
+
+    private AuthenticatorData getAuthenticatorData(String authenticator,
+                                                   List<AuthenticatorData> authenticatorDataList) {
+
+        for (AuthenticatorData authenticatorData : authenticatorDataList) {
+            if (StringUtils.equals(authenticatorData.getName(), authenticator)) {
+                return authenticatorData;
+            }
+        }
+        return null;
     }
 
     private boolean isAuthFlowSuccessful(AuthServiceRequestWrapper request) {
@@ -220,12 +244,40 @@ public class AuthenticationService {
     private boolean isAuthFlowFailed(AuthServiceRequestWrapper request, AuthServiceResponseWrapper response)
             throws AuthServiceException {
 
-        return AuthenticatorFlowStatus.FAIL_COMPLETED == request.getAuthFlowStatus() || response.isErrorResponse();
+        return AuthenticatorFlowStatus.FAIL_COMPLETED == request.getAuthFlowStatus() || response.isErrorResponse() ||
+                isSentToRetryPageOnMissingContext(request, response);
     }
 
     private boolean isAuthFlowIncomplete(AuthServiceRequestWrapper request) {
 
         return AuthenticatorFlowStatus.INCOMPLETE == request.getAuthFlowStatus();
+    }
+
+    private AuthenticationResult getAuthenticationResult(AuthServiceRequestWrapper request) {
+
+        AuthenticationResult authenticationResult =
+                (AuthenticationResult) request.getAttribute(FrameworkConstants.RequestAttribute.AUTH_RESULT);
+        if (authenticationResult == null) {
+            AuthenticationResultCacheEntry authenticationResultCacheEntry =
+                    FrameworkUtils.getAuthenticationResultFromCache(request.getSessionDataKey());
+            if (authenticationResultCacheEntry != null) {
+                authenticationResult = authenticationResultCacheEntry.getResult();
+            }
+        }
+        return authenticationResult;
+    }
+
+    private boolean isSentToRetryPageOnMissingContext(AuthServiceRequestWrapper request,
+                                                      AuthServiceResponseWrapper response) throws AuthServiceException {
+
+        // If it's a retry due to context being null there is nothing to retry again the flow should be restarted.
+        if (AuthenticatorFlowStatus.INCOMPLETE == request.getAuthFlowStatus() &&
+                Boolean.TRUE.equals(request.getAttribute(FrameworkConstants.IS_SENT_TO_RETRY))) {
+            Map<String, String> queryParams = AuthServiceUtils.extractQueryParams(response.getRedirectURL());
+            return StringUtils.equals(queryParams.get(FrameworkConstants.STATUS_PARAM),
+                    FrameworkConstants.ERROR_STATUS_AUTH_CONTEXT_NULL);
+        }
+        return false;
     }
 
     private String getFlowCompletionSessionDataKey(AuthServiceRequestWrapper request,
@@ -237,21 +289,5 @@ public class AuthenticationService {
         }
 
         return completionSessionDataKey;
-    }
-
-    private AuthenticationResult getAuthenticationResult(AuthServiceRequestWrapper request,
-                                                         AuthServiceResponseWrapper response)
-            throws AuthServiceException {
-
-        AuthenticationResult authenticationResult =
-                (AuthenticationResult) request.getAttribute(FrameworkConstants.RequestAttribute.AUTH_RESULT);
-        if (authenticationResult == null) {
-            AuthenticationResultCacheEntry authenticationResultCacheEntry =
-                    FrameworkUtils.getAuthenticationResultFromCache(getFlowCompletionSessionDataKey(request, response));
-            if (authenticationResultCacheEntry != null) {
-                authenticationResult = authenticationResultCacheEntry.getResult();
-            }
-        }
-        return authenticationResult;
     }
 }

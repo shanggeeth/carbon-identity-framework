@@ -28,7 +28,9 @@ public abstract class FrameworkConstants {
     public static final String SUBJECT = "subject";
     public static final String DEFAULT_SEQUENCE = "default";
     public static final String AUTHENTICATED_AUTHENTICATORS = "authenticatedAuthenticators";
+    public static final String REDIRECT_URL = "REDIRECT_URL";
     public static final String COMMONAUTH_COOKIE = "commonAuthId";
+    public static final String ALLOW_SESSION_CREATION = "allowSessionCreation";
     public static final String CONTEXT_PROP_INVALID_EMAIL_USERNAME = "InvalidEmailUsername";
     // Cookie used for post authenticaion sequence tracking
     public static final String PASTR_COOKIE = "pastr";
@@ -77,6 +79,7 @@ public abstract class FrameworkConstants {
     public static final String SKIP_NONCE_COOKIE_VALIDATION = "SkipNonceCookieValidation";
     public static final String IS_MULTI_OPS_RESPONSE = "isMultiOptionsResponse";
     public static final String IS_AUTH_FLOW_CONCLUDED = "isAuthFlowConcluded";
+    public static final String IS_API_BASED_AUTH_FLOW = "isAPIBasedAuthFlow";
 
     // This is to support sign-up form to be displayed in the provisioning flow, as when trying to displaying the
     // sign-up form, we validate whether self-sign up is enabled.
@@ -230,6 +233,10 @@ public abstract class FrameworkConstants {
     public static final String BLOCKED_USERSTORE_DOMAINS_SEPARATOR = ",";
 
     public static final String IS_USER_RESOLVED = "isUserResolved";
+    public static final String ERROR_STATUS_AUTH_CONTEXT_NULL = "authentication.context.null";
+    public static final String ERROR_DESCRIPTION_AUTH_CONTEXT_NULL = "authentication.context.null.description";
+    public static final String IS_SENT_TO_RETRY = "isSentToRetry";
+    public static final String CONTEXT_IDENTIFIER = "contextIdentifier";
 
     private FrameworkConstants() {
 
@@ -747,5 +754,18 @@ public abstract class FrameworkConstants {
 
         STRING,
         INTEGER,
+    }
+
+    /**
+     * Enum for authenticator prompt type.
+     * USER_PROMPT - Obtain data from user input.
+     * INTERNAL_PROMPT - Generate required data internally.
+     * REDIRECTION_PROMPT - Requires redirection.
+     */
+    public enum AuthenticatorPromptType {
+
+        USER_PROMPT,
+        INTERNAL_PROMPT,
+        REDIRECTION_PROMPT
     }
 }

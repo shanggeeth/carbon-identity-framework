@@ -99,6 +99,8 @@ public class IdentityProviderManager implements IdpManager {
 
     private static final Log log = LogFactory.getLog(IdentityProviderManager.class);
     private static final String OPENID_IDP_ENTITY_ID = "IdPEntityId";
+    private static final int OTP_CODE_MIN_LENGTH = 4;
+    private static final int OTP_CODE_MAX_LENGTH = 10;
     private static CacheBackedIdPMgtDAO dao = new CacheBackedIdPMgtDAO(new IdPManagementDAO());
     private static volatile IdentityProviderManager instance = new IdentityProviderManager();
 
@@ -995,6 +997,13 @@ public class IdentityProviderManager implements IdpManager {
                 }
 
             }
+            if (isAnOTPLengthConfig(idpProp)) {
+                if (StringUtils.isEmpty(idpProp.getValue()) || !StringUtils.isNumeric(idpProp.getValue()) ||
+                        Integer.parseInt(idpProp.getValue().trim()) < OTP_CODE_MIN_LENGTH ||
+                        Integer.parseInt(idpProp.getValue().trim()) > OTP_CODE_MAX_LENGTH) {
+                    throw new IdentityProviderManagementException("Invalid OTP length");
+                }
+            }
         }
         // invoking the pre listeners
         Collection<IdentityProviderMgtListener> listeners = IdPManagementServiceComponent.getIdpMgtListeners();
@@ -1673,11 +1682,15 @@ public class IdentityProviderManager implements IdpManager {
     public IdentityProvider getEnabledIdPByRealmId(String realmId, String tenantDomain)
             throws IdentityProviderManagementException {
 
-        IdentityProvider idp = getIdPByRealmId(realmId, tenantDomain);
-        if (idp != null && idp.isEnable()) {
-            return idp;
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
+        if (StringUtils.isEmpty(realmId)) {
+            throw new IdentityProviderManagementException("Invalid argument: Identity Provider Home Realm Identifier value is empty.");
         }
-        return null;
+        IdentityProvider identityProvider = dao.getEnabledIdPByRealmId(realmId, tenantId, tenantDomain);
+        if (identityProvider == null) {
+            identityProvider = new FileBasedIdPMgtDAO().getEnabledIdPByRealmId(realmId);
+        }
+        return identityProvider;
     }
 
     /**
@@ -3288,5 +3301,23 @@ public class IdentityProviderManager implements IdpManager {
             }
         }
         return metaProvisioningConfigMap;
+    }
+
+    /**
+     * Check whether the identity property is an OTP length property.
+     *
+     * @param property  Identity Provider property.
+     * @return true if the identity property is OTP length property, otherwise false.
+     */
+    private boolean isAnOTPLengthConfig(IdentityProviderProperty property) {
+
+        if (StringUtils.equals(property.getName(), "SelfRegistration.OTP.OTPLength") ||
+                StringUtils.equals(property.getName(), "LiteRegistration.OTP.OTPLength") ||
+                StringUtils.equals(property.getName(), "EmailVerification.OTP.OTPLength") ||
+                StringUtils.equals(property.getName(), "UserClaimUpdate.OTP.OTPLength") ||
+                StringUtils.equals(property.getName(), "Recovery.Notification.Password.OTP.OTPLength")) {
+            return true;
+        }
+        return false;
     }
 }

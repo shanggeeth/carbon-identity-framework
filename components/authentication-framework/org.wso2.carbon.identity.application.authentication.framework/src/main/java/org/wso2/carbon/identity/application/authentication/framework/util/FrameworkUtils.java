@@ -211,7 +211,7 @@ public class FrameworkUtils {
             .asList(FrameworkConstants.RequestType.CLAIM_TYPE_SAML_SSO, FrameworkConstants.OAUTH2);
 
     public static final String QUERY_SEPARATOR = "&";
-    private static final String EQUAL = "=";
+    public static final String EQUAL = "=";
     public static final String REQUEST_PARAM_APPLICATION = "application";
     private static final String ALREADY_WRITTEN_PROPERTY = "AlreadyWritten";
 
@@ -650,6 +650,7 @@ public class FrameworkUtils {
                 }
             }
             request.setAttribute(FrameworkConstants.RequestParams.FLOW_STATUS, AuthenticatorFlowStatus.INCOMPLETE);
+            request.setAttribute(FrameworkConstants.IS_SENT_TO_RETRY, true);
             if (context != null) {
                 if (IdentityTenantUtil.isTenantedSessionsEnabled()) {
                     uriBuilder.addParameter(USER_TENANT_DOMAIN_HINT, context.getUserTenantDomain());
@@ -841,7 +842,12 @@ public class FrameworkUtils {
         if (isOrganizationQualifiedRequest()) {
             path = FrameworkConstants.ORGANIZATION_CONTEXT_PREFIX + tenantDomain + "/";
         } else {
-            path = FrameworkConstants.TENANT_CONTEXT_PREFIX + tenantDomain + "/";
+            if (!IdentityTenantUtil.isSuperTenantRequiredInUrl() &&
+                    MultitenantConstants.SUPER_TENANT_DOMAIN_NAME.equals(tenantDomain)) {
+                path = "/";
+            } else {
+                path = FrameworkConstants.TENANT_CONTEXT_PREFIX + tenantDomain + "/";
+            }
         }
         removeCookie(req, resp, FrameworkConstants.COMMONAUTH_COOKIE, SameSiteCookie.NONE, path);
     }
@@ -3440,8 +3446,7 @@ public class FrameworkUtils {
                 String callerTenant = callerPath.split("/")[2];
                 String callerPathWithoutTenant = callerPath.replaceFirst("/t/[^/]+/", "/");
                 String redirectURL = ServiceURLBuilder.create().addPath(callerPathWithoutTenant)
-                        .setTenant(callerTenant, true)
-                        .build().getAbsolutePublicURL();
+                        .setTenant(callerTenant).build().getAbsolutePublicURL();
                 return redirectURL;
             } else if (callerPath != null && callerPath.startsWith(FrameworkConstants.ORGANIZATION_CONTEXT_PREFIX)) {
                 String callerOrgId = callerPath.split("/")[2];

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, WSO2 LLC. (http://www.wso2.org).
+ * Copyright (c) 2022-2023, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -266,7 +266,10 @@ public class ApplicationMgtDBQueries {
     public static final String REMOVE_UM_ROLE_PERMISSION = "DELETE FROM UM_ROLE_PERMISSION WHERE UM_PERMISSION_ID = ?";
 
     // DELETE query - Oauth
+    @Deprecated
     public static final String REMOVE_OAUTH_APPLICATION = "DELETE FROM IDN_OAUTH_CONSUMER_APPS WHERE CONSUMER_KEY=?";
+    public static final String REMOVE_OAUTH_APPLICATION_WITH_TENANT = "DELETE FROM IDN_OAUTH_CONSUMER_APPS WHERE " +
+            "CONSUMER_KEY=? AND TENANT_ID=?";
 
     public static final String LOAD_IDP_AUTHENTICATOR_ID = "SELECT A.ID FROM IDP_AUTHENTICATOR A JOIN IDP B ON A" +
             ".IDP_ID= B.ID WHERE A.NAME =? AND B.NAME=? AND ((A.TENANT_ID =? AND B.TENANT_ID =?) OR (B.TENANT_ID=? " +
@@ -282,6 +285,14 @@ public class ApplicationMgtDBQueries {
 
     public static final String GET_SP_METADATA_BY_SP_ID_H2 = "SELECT ID, NAME, `VALUE`, DISPLAY_NAME FROM " +
             "SP_METADATA WHERE SP_ID = ?";
+
+    public static final String GET_SP_PROPERTY_VALUE_BY_PROPERTY_KEY = "SELECT VALUE FROM SP_METADATA WHERE " +
+            "SP_ID=:" + SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_SP_ID + "; AND " +
+            "NAME=:" + SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_NAME + ";";
+
+    public static final String GET_SP_PROPERTY_VALUE_BY_PROPERTY_KEY_H2 = "SELECT `VALUE` FROM SP_METADATA WHERE " +
+            "SP_ID=:" + SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_SP_ID + "; AND " +
+            "NAME=:" + SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_NAME + ";";
 
     public static final String ADD_SP_METADATA = "INSERT INTO SP_METADATA (SP_ID, NAME, VALUE, DISPLAY_NAME, " +
             "TENANT_ID) VALUES (?, ?, ?, ?, ?)";
@@ -446,4 +457,66 @@ public class ApplicationMgtDBQueries {
 
     public static final String GET_TOTAL_SP_CLAIM_USAGES = "SELECT COUNT(*) FROM SP_CLAIM_MAPPING WHERE TENANT_ID = ?" +
             " AND IDP_CLAIM = ?";
+
+    public static final String GET_MAIN_APP_ID = "SELECT MAIN_APP_ID FROM SP_SHARED_APP WHERE SHARED_APP_ID = ?";
+
+    public static final String GET_APP_TENANT_ID = "SELECT TENANT_ID FROM SP_APP WHERE UUID = ?";
+
+    // Authorized API queries.
+    public static final String GET_AUTHORIZED_APIS = "SELECT AUTHORIZED_API.APP_ID, AUTHORIZED_API.API_ID, " +
+            "POLICY_ID, SCOPE_NAME, TENANT_ID FROM AUTHORIZED_API LEFT JOIN AUTHORIZED_SCOPE ON " +
+            "AUTHORIZED_API.APP_ID = AUTHORIZED_SCOPE.APP_ID AND AUTHORIZED_API.API_ID = AUTHORIZED_SCOPE.API_ID" +
+            " WHERE AUTHORIZED_API.APP_ID = ?";
+
+    public static final String GET_AUTHORIZED_SCOPES = "SELECT POLICY_ID, SCOPE_NAME FROM AUTHORIZED_API JOIN" +
+            " AUTHORIZED_SCOPE ON AUTHORIZED_API.APP_ID = AUTHORIZED_SCOPE.APP_ID AND AUTHORIZED_API.API_ID " +
+            "= AUTHORIZED_SCOPE.API_ID WHERE AUTHORIZED_API.APP_ID = ?";
+
+    public static final String GET_AUTHORIZED_API = "SELECT AUTHORIZED_API.APP_ID, AUTHORIZED_API.API_ID, " +
+            "POLICY_ID, SCOPE_NAME, TENANT_ID FROM AUTHORIZED_API JOIN AUTHORIZED_SCOPE ON " +
+            "AUTHORIZED_API.APP_ID = AUTHORIZED_SCOPE.APP_ID AND AUTHORIZED_API.API_ID = AUTHORIZED_SCOPE.API_ID" +
+            " WHERE AUTHORIZED_API.APP_ID = ? AND AUTHORIZED_API.API_ID = ?";
+
+    public static final String ADD_AUTHORIZED_API = "INSERT INTO AUTHORIZED_API (APP_ID, API_ID, POLICY_ID) " +
+            "VALUES (?, ?, ?)";
+
+    public static final String ADD_AUTHORIZED_SCOPE = "INSERT INTO AUTHORIZED_SCOPE (APP_ID, API_ID, SCOPE_NAME," +
+            " TENANT_ID) VALUES (?, ?, ?, ?)";
+
+    public static final String DELETE_AUTHORIZED_API_BY_API_ID = "DELETE FROM AUTHORIZED_API WHERE APP_ID = ? AND " +
+            "API_ID = ?";
+
+    public static final String DELETE_AUTHORIZED_SCOPE = "DELETE FROM AUTHORIZED_SCOPE WHERE " +
+            "APP_ID = ? AND API_ID = ? AND SCOPE_NAME = ? AND TENANT_ID = ?";
+
+    public static final String ADD_APPLICATION_ASSOC_ROLES_HEAD = "INSERT INTO APP_ROLE_ASSOCIATION " +
+            "(APP_ID, ROLE_ID) VALUES ";
+
+    public static final String ADD_APPLICATION_ASSOC_ROLES_TAIL = "(:" +
+            SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_APP_ID + "%1$d;, :" +
+            SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_ROLE_ID + "%1$d;)";
+
+    public static final String DELETE_APPLICATION_ROLE_ASSOCIATIONS = "DELETE FROM APP_ROLE_ASSOCIATION WHERE " +
+            "APP_ID=:" +  SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_APP_ID + ";";
+
+    public static final String LOAD_ASSOCIATED_ROLES = "SELECT ROLE_ID FROM APP_ROLE_ASSOCIATION WHERE " +
+            "APP_ID=:" + SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_APP_ID + ";";
+
+    public static final String ADD_APPLICATION_ASSOC_ROLE = "INSERT INTO APP_ROLE_ASSOCIATION " +
+            "(APP_ID, ROLE_ID) VALUES (?, ?)";
+
+    /**
+     * SQL placeholders related to application management tables.
+     */
+    public static final class SQLPlaceholders {
+
+        // Related to SP_METADATA table.
+        public static final String DB_SCHEMA_COLUMN_NAME_SP_ID = "SP_ID";
+        public static final String DB_SCHEMA_COLUMN_NAME_NAME = "NAME";
+        public static final String DB_SCHEMA_COLUMN_NAME_VALUE = "VALUE";
+
+        // Related to APP_ROLE_ASSOCIATION table.
+        public static final String DB_SCHEMA_COLUMN_NAME_APP_ID = "APP_ID";
+        public static final String DB_SCHEMA_COLUMN_NAME_ROLE_ID = "ROLE_ID";
+    }
 }

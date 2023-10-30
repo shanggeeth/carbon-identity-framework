@@ -53,18 +53,6 @@ public class AuthServiceResponseWrapper extends CommonAuthResponseWrapper {
     }
 
     /**
-     * Get the sessionDataKey related to the authentication flow.
-     *
-     * @return String of sessionDataKey.
-     * @throws AuthServiceException
-     */
-    public String getSessionDataKey() throws AuthServiceException {
-
-        Map<String, String> queryParams = AuthServiceUtils.extractQueryParams(getRedirectURL());
-        return queryParams.get(FrameworkConstants.SESSION_DATA_KEY);
-    }
-
-    /**
      * Check if the response is an error response.
      * This is determined by checking the existence and the value of the
      * query param {@link AuthServiceConstants#AUTH_FAILURE_PARAM}.
@@ -76,6 +64,18 @@ public class AuthServiceResponseWrapper extends CommonAuthResponseWrapper {
 
         Map<String, String> queryParams = AuthServiceUtils.extractQueryParams(getRedirectURL());
         return Boolean.parseBoolean(queryParams.get(AuthServiceConstants.AUTH_FAILURE_PARAM));
+    }
+
+    /**
+     * Get the sessionDataKey related to the authentication flow.
+     *
+     * @return String of sessionDataKey.
+     * @throws AuthServiceException
+     */
+    public String getSessionDataKey() throws AuthServiceException {
+
+        Map<String, String> queryParams = AuthServiceUtils.extractQueryParams(getRedirectURL());
+        return queryParams.get(FrameworkConstants.SESSION_DATA_KEY);
     }
 
     @Override
