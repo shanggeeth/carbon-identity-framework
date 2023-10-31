@@ -751,8 +751,8 @@
   "configuration.store.allow_cross_tenant_search": false,
 
   "fido.webauthn.enable": true,
-  "fido.enable_passkey_progressive_enrollment": true,
-  "fido.enable_usernameless_authentication": false,
+  "fido.enable_passkey_progressive_enrollment": false,
+  "fido.enable_usernameless_authentication": true,
   "fido.trusted.origins": ["${carbon.protocol}://${carbon.host}:${carbon.management.port}"],
   "fido.user_response_timeout": "300000",
   "fido.metadata_service.enable": false,
@@ -816,9 +816,9 @@
   ],
   "console.idp_configs.storage": "webWorker",
   "console.idp_configs.periodicTokenRefresh": false,
-  "console.idp_configs.authorizeEndpointURL": "${serverOrigin}/${tenantPrefix}/${superTenantDomain}/oauth2/authorize?ut=${userTenantDomain}",
-  "console.idp_configs.logoutEndpointURL": "${serverOrigin}/${tenantPrefix}/${superTenantDomain}/oidc/logout",
-  "console.idp_configs.oidcSessionIFrameEndpointURL": "${serverOrigin}/${tenantPrefix}/${superTenantDomain}/oidc/checksession",
+  "console.idp_configs.authorizeEndpointURL": "${serverOrigin}/oauth2/authorize",
+  "console.idp_configs.logoutEndpointURL": "${serverOrigin}/oidc/logout",
+  "console.idp_configs.oidcSessionIFrameEndpointURL": "${serverOrigin}/oidc/checksession",
   "console.i18n_resource_path": "",
   "console.login_callback_path": "",
   "console.logout_callback_path": "",
@@ -973,7 +973,6 @@
   ],
   "console.applications.scopes.update": ["internal_application_mgt_update"],
   "console.applications.scopes.delete": ["internal_application_mgt_delete"],
-  "console.applications.disabled_features": ["applications.loginFlow.legacyEditor"],
   "console.applications.ui.certificate_alias_enabled": false,
   "console.application_roles.enabled": true,
   "console.approvals.enabled": true,
@@ -1013,6 +1012,7 @@
   "console.email_providers.scopes.update": ["internal_config_mgt_update"],
   "console.email_providers.scopes.delete": ["internal_config_mgt_delete"],
   "console.sms_providers.enabled": true,
+  "console.sms_providers.disabled_features": ["choreoAsSMSProvider"],
   "console.sms_providers.scopes.create": ["internal_config_mgt_add"],
   "console.sms_providers.scopes.read": ["internal_config_mgt_view"],
   "console.sms_providers.scopes.update": ["internal_config_mgt_update"],
@@ -1193,9 +1193,9 @@
   "myaccount.session.params.checkSessionInterval": 3,
   "myaccount.personal_info.disabled_features": ["profileInfo.mobileVerification"],
   "myaccount.security.disabled_features": ["security.loginVerifyData.typingDNA"],
-  "myaccount.idp_configs.authorizeEndpointURL": "${serverOrigin}/${tenantPrefix}/${superTenantDomain}/oauth2/authorize?ut\u003d${userTenantDomain}",
-  "myaccount.idp_configs.logoutEndpointURL": "${serverOrigin}/${tenantPrefix}/${superTenantDomain}/oidc/logout",
-  "myaccount.idp_configs.oidcSessionIFrameEndpointURL": "${serverOrigin}/${tenantPrefix}/${superTenantDomain}/oidc/checksession",
+  "myaccount.idp_configs.authorizeEndpointURL": "${serverOrigin}/oauth2/authorize",
+  "myaccount.idp_configs.logoutEndpointURL": "${serverOrigin}/oidc/logout",
+  "myaccount.idp_configs.oidcSessionIFrameEndpointURL": "${serverOrigin}/oidc/checksession",
   "myaccount.idp_configs.scope": [
     "SYSTEM",
     "profile",
@@ -1239,6 +1239,7 @@
 
   "identity_datastore.datastore_type": "org.wso2.carbon.identity.governance.store.JDBCIdentityDataStore",
   "input_validation.default_validator": "alphaNumeric",
+  "input_validation.username.enable": false,
 
   "email_templates.branding.fallbacks.copyright_text": "WSO2 Identity Server",
   "email_templates.branding.fallbacks.primary_color": "#FF7300",
@@ -1250,5 +1251,11 @@
   "email_templates.branding.fallbacks.button_font_color": "#FFFFFF",
   "email_templates.branding.fallbacks.light_border_color": "transparent",
   "email_templates.branding.fallbacks.dark_border_color": "#333333",
-  "authentication.enable_basic_auth_handler": true
+  "authentication.enable_basic_auth_handler": true,
+
+  "organization_management.self_service.system_user_name": "B2B-SS-System-User",
+  "organization_management.self_service.default_system_app_name": "B2B-Self-Service-Mgt-Application",
+  "organization_management.self_service.default_token_expiry_time": "7200",
+  "organization_management.self_service.internal_role_name": "B2B-SS-System-Role",
+  "organization_management.self_service.user_store_name_for_system_user": "PRIMARY"
 }
