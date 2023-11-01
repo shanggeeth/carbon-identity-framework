@@ -21,6 +21,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.user.registration.AttributeCollectionRegStepExecutor;
 import org.wso2.carbon.identity.user.registration.PasswordOnboardingRegStepExecutor;
@@ -29,12 +35,6 @@ import org.wso2.carbon.identity.user.registration.UserRegistrationFlowService;
 import org.wso2.carbon.identity.user.registration.UserRegistrationFlowServiceImpl;
 import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.user.core.service.RealmService;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
 
 @Component(
          name = "usermgt.registration.component",
@@ -43,12 +43,38 @@ public class UserRegistrationDSComponent {
 
     private static final Log log = LogFactory.getLog(UserRegistrationDSComponent.class);
 
+    private static BundleContext bundleContext = null;
     private static RegistryService registryService = null;
-
     private static RealmService realmService = null;
-
     public static RegistryService getRegistryService() {
         return registryService;
+    }
+
+    @Activate
+    protected void activate(ComponentContext context) {
+
+        bundleContext = context.getBundleContext();
+
+        UserRegistrationFlowService registrationFlowService = UserRegistrationFlowServiceImpl.getInstance();
+        bundleContext.registerService(UserRegistrationFlowService.class.getName(), registrationFlowService, null);
+
+        bundleContext.registerService(RegistrationStepExecutor.class.getName(),
+                AttributeCollectionRegStepExecutor.getInstance(), null);
+
+        bundleContext.registerService(RegistrationStepExecutor.class.getName(),
+                PasswordOnboardingRegStepExecutor.getInstance(), null);
+    }
+
+    @Deactivate
+    protected void deactivate(ComponentContext context) {
+        log.debug("UserRegistration bundle is deactivated ");
+    }
+
+    protected void unsetRegistryService(RegistryService registryService) {
+        if (log.isDebugEnabled()) {
+            log.info("Unsetting the Registry Service");
+        }
+        UserRegistrationDSComponent.registryService = null;
     }
 
     @Reference(
@@ -80,35 +106,6 @@ public class UserRegistrationDSComponent {
         }
         UserRegistrationDSComponent.realmService = realmService;
         UserRegistrationServiceDataHolder.setRealmService(realmService);
-    }
-
-    @Activate
-    protected void activate(ComponentContext ctxt) {
-
-        BundleContext bundleContext = ctxt.getBundleContext();
-
-        UserRegistrationFlowService registrationFlowService = UserRegistrationFlowServiceImpl.getInstance();
-        bundleContext.registerService(UserRegistrationFlowService.class.getName(), registrationFlowService, null);
-
-        bundleContext.registerService(RegistrationStepExecutor.class.getName(),
-                AttributeCollectionRegStepExecutor.getInstance(), null);
-
-        bundleContext.registerService(RegistrationStepExecutor.class.getName(),
-                PasswordOnboardingRegStepExecutor.getInstance(), null);
-
-        log.debug("UserRegistration bundle is activated ");
-    }
-
-    @Deactivate
-    protected void deactivate(ComponentContext ctxt) {
-        log.debug("UserRegistration bundle is deactivated ");
-    }
-
-    protected void unsetRegistryService(RegistryService registryService) {
-        if (log.isDebugEnabled()) {
-            log.info("Unsetting the Registry Service");
-        }
-        UserRegistrationDSComponent.registryService = null;
     }
 
     protected void unsetRealmService(RealmService realmService) {

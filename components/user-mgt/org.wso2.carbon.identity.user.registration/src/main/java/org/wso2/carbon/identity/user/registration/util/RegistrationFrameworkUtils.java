@@ -43,7 +43,6 @@ import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecuto
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.internal.UserRegistrationServiceDataHolder;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
-import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequestedUser;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
