@@ -18,9 +18,15 @@
 
 package org.wso2.carbon.identity.user.registration;
 
+import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
+import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
+import org.wso2.carbon.identity.user.registration.model.response.RegistrationResponse;
+
 /**
  * This interface is used to handle the registration sequence.
  */
 public interface RegistrationSequenceHandler {
 
+    public RegistrationResponse handle(RegistrationRequest request, RegistrationContext context) throws RegistrationFrameworkException;
 }

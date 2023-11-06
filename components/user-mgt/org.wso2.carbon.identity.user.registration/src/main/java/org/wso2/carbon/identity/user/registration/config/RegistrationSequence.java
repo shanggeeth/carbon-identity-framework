@@ -21,7 +21,9 @@ package org.wso2.carbon.identity.user.registration.config;
 import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RegistrationSequence implements Serializable {
@@ -30,7 +32,8 @@ public class RegistrationSequence implements Serializable {
     private String name;
     private String applicationId;
     private boolean isAutoLoginEnabled;
-    private Map<Integer, RegistrationStep> stepMap = new HashMap<>();
+    private List<RegistrationStep> stepDefinitions = new ArrayList<>();
+    private String flowDefinition;
     private boolean completed;
 
     public String getName() {
@@ -63,16 +66,6 @@ public class RegistrationSequence implements Serializable {
         isAutoLoginEnabled = autoLoginEnabled;
     }
 
-    public Map<Integer, RegistrationStep> getStepMap() {
-
-        return stepMap;
-    }
-
-    public void setStepMap(Map<Integer, RegistrationStep> stepMap) {
-
-        this.stepMap = stepMap;
-    }
-
     public boolean isCompleted() {
 
         return completed;
@@ -81,5 +74,25 @@ public class RegistrationSequence implements Serializable {
     public void setCompleted(boolean completed) {
 
         this.completed = completed;
+    }
+
+    public String getFlowDefinition() {
+
+        return flowDefinition;
+    }
+
+    public void setFlowDefinition(String flowDefinition) {
+
+        this.flowDefinition = flowDefinition;
+    }
+
+    public void addStepDefinition(RegistrationStep step) {
+
+        stepDefinitions.add(step);
+    }
+
+    public List<RegistrationStep> getStepDefinitions() {
+
+        return stepDefinitions;
     }
 }

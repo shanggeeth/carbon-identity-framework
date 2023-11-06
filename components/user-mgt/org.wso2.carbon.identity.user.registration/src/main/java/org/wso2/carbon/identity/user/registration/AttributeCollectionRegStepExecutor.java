@@ -86,12 +86,9 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
                               NextStepResponse response, RegistrationStepExecutorConfig config)
             throws RegistrationFrameworkException {
 
-        RegistrationFlowConstants.StepStatus status = context.getRegistrationSequence().getStepMap()
-                .get(context.getCurrentStep()).getStatus();
+        RegistrationFlowConstants.StepStatus status = context.getCurrentStepStatus();
 
         if (NOT_STARTED.equals(status) ) {
-
-            context.getRegistrationSequence().getStepMap().get(context.getCurrentStep()).setStatus(INCOMPLETE);
 
             List<RequiredParam> params = new ArrayList<>();
 

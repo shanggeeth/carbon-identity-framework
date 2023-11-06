@@ -93,8 +93,7 @@ public class PasswordOnboardingRegStepExecutor implements RegistrationStepExecut
                                                         NextStepResponse response,
                                                         RegistrationStepExecutorConfig config) throws RegistrationFrameworkException {
 
-        RegistrationFlowConstants.StepStatus status = context.getRegistrationSequence().getStepMap()
-                .get(context.getCurrentStep()).getStatus();
+        RegistrationFlowConstants.StepStatus status = context.getCurrentStepStatus();
         RegistrationRequestedUser user = context.getRegisteringUser();
 
         if (user.getUsername() == null) {

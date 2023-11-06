@@ -32,7 +32,8 @@ public class RegistrationContext implements Serializable {
 
     private static final long serialVersionUID = 542871476395078667L;
 
-    private int currentStep;
+    private int currentStep = 0;
+    private RegistrationFlowConstants.StepStatus currentStepStatus;
     private String contextIdentifier;
     private String tenantDomain;
     private String requestType;
@@ -156,5 +157,15 @@ public class RegistrationContext implements Serializable {
             this.requestedParameters.clear();
         }
         this.requestedParameters.addAll(newParamList);
+    }
+
+    public RegistrationFlowConstants.StepStatus getCurrentStepStatus() {
+
+        return currentStepStatus;
+    }
+
+    public void setCurrentStepStatus(RegistrationFlowConstants.StepStatus currentStepStatus) {
+
+        this.currentStepStatus = currentStepStatus;
     }
 }

@@ -43,6 +43,7 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
         return instance;
     }
 
+    @Override
     public RegistrationResponse handle(RegistrationRequest request, RegistrationContext context) throws RegistrationFrameworkException {
 
         RegistrationResponse response =  new RegistrationResponse();
@@ -51,38 +52,26 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
 
             int currentStep = context.getCurrentStep();
 
-            // let's initialize the step count to 1 if this the beginning of the sequence
-            if (currentStep == 0) {
-                currentStep++;
-                context.setCurrentStep(currentStep);
-            }
-
-            RegistrationStep stepConfig= context.getRegistrationSequence().getStepMap().get(currentStep);
+            RegistrationStep stepConfig= context.getRegistrationSequence().getStepDefinitions().get(currentStep);
 
             // if the current step is completed
-            if (stepConfig != null && RegistrationFlowConstants.StepStatus.COMPLETE.equals(stepConfig.getStatus())) {
+            if (stepConfig != null && RegistrationFlowConstants.StepStatus.COMPLETE.equals(context.getCurrentStepStatus())) {
 
+                // Check whether there are more steps to execute.
+                if (context.getRegistrationSequence().getStepDefinitions().size() == currentStep + 1) {
+                    LOG.info("TESTING: There are no more steps to execute.");
+                    context.getRegistrationSequence().setCompleted(true);
+                    continue;
+                }
                 currentStep = context.getCurrentStep() + 1;
                 context.setCurrentStep(currentStep);
-                stepConfig = context.getRegistrationSequence().getStepMap().get(currentStep);
             }
-
-            // If no further steps exists
-            if (stepConfig == null) {
-
-                LOG.info("TESTING: There are no more steps to execute.");
-                context.getRegistrationSequence().setCompleted(true);
-                continue;
-            }
-
-            // If the sequence is not completed, we have work to do.
-            LOG.info("TESTING: Starting Step: " + stepConfig.getOrder());
 
             RegistrationStepHandler registrationStepHandler = DefaultRegistrationStepHandler.getInstance();
             NextStepResponse response1 = registrationStepHandler.handle(request, context);
 
             // if step is not completed, that means step wants to redirect to outside
-            if (!RegistrationFlowConstants.StepStatus.COMPLETE.equals(stepConfig.getStatus())) {
+            if (!RegistrationFlowConstants.StepStatus.COMPLETE.equals(context.getCurrentStepStatus())) {
                 LOG.info("TESTING: Step is not complete yet. Redirecting to outside.");
                 response.setStatus(RegistrationFlowConstants.Status.INCOMPLETE);
                 response.setNextStep(response1);

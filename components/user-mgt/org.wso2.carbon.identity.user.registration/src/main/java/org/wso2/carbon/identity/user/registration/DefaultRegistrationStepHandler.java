@@ -59,7 +59,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
     @Override
     public NextStepResponse handle(RegistrationRequest request, RegistrationContext context) throws RegistrationFrameworkException {
 
-        RegistrationStep step = context.getRegistrationSequence().getStepMap().get(context.getCurrentStep());
+        RegistrationStep step = context.getRegistrationSequence().getStepDefinitions().get(context.getCurrentStep());
 
         NextStepResponse stepResponse = new NextStepResponse();
         stepResponse.setType(SINGLE_OPTION);
@@ -68,17 +68,18 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
             List<RegistrationStepExecutorConfig> regExecutors = step.getConfiguredExecutors();
             if (regExecutors.size() == 1) {
                 step.setSelectedExecutor(regExecutors.get(0));
+                context.setCurrentStepStatus(NOT_STARTED);
             } else {
                 // Handling multi option steps.
-                if (SELECTION_PENDING.equals(step.getStatus())) {
+                if (SELECTION_PENDING.equals(context.getCurrentStepStatus())) {
                     // It is expected to an executor to be selected in order to continue the registration.
                     RegistrationStepExecutorConfig selectedExecutor = resolveSelectedExecutor(regExecutors, request);
                     step.setSelectedExecutor(selectedExecutor);
                     // Once an executor is selected, it can be considered as a single option and start the flow.
                     stepResponse.setType(SINGLE_OPTION);
-                    step.setStatus(NOT_STARTED);
+                    context.setCurrentStepStatus(NOT_STARTED);
                 } else {
-                    step.setStatus(SELECTION_PENDING);
+                    context.setCurrentStepStatus(SELECTION_PENDING);
                     stepResponse.setType(MULTI_OPTION);
                     stepResponse.setExecutors(loadMultiOptionsForStep(context, regExecutors));
                     // Further processing of the step is not possible without selecting an executor.
@@ -89,7 +90,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
 
         RegistrationStepExecutorConfig regExecutor = step.getSelectedExecutor();
 
-        step.setStatus(regExecutor.getExecutor().execute(request, context, stepResponse, regExecutor));
+        context.setCurrentStepStatus(regExecutor.getExecutor().execute(request, context, stepResponse, regExecutor));
         return stepResponse;
     }
 

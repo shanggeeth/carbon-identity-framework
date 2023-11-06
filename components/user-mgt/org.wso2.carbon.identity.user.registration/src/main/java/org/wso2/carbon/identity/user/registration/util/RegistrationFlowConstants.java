@@ -20,6 +20,8 @@ package org.wso2.carbon.identity.user.registration.util;
 
 public class RegistrationFlowConstants {
 
+    public final static String DEFAULT_FLOW_DEFINITION = "default";
+
     public enum Status {
 
         INCOMPLETE,

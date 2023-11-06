@@ -20,6 +20,7 @@ package org.wso2.carbon.identity.user.registration;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.osgi.framework.FrameworkUtil;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
@@ -41,9 +42,9 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
             throws RegistrationFrameworkException {
 
         RegistrationContext context = RegistrationFrameworkUtils.initiateRegContext(appId, type);
-        DefaultRegistrationSequenceHandler handler = DefaultRegistrationSequenceHandler.getInstance();
 
-        RegistrationResponse response = handler.handle(new RegistrationRequest(), context);
+        RegistrationResponse response = RegistrationFrameworkUtils
+                .getRegistrationSeqHandler(context.getRegistrationSequence()).handle(new RegistrationRequest(), context);
         RegistrationFrameworkUtils.addRegContextToCache(context);
         return response;
     }

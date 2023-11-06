@@ -28,20 +28,24 @@ import java.util.List;
 public class RegistrationStep implements Serializable {
 
     private static final long serialVersionUID = -6352819516789400021L;
-    private int order;
+    private String id;
     private boolean isMultiOption;
-    private RegistrationFlowConstants.StepStatus status;
     private RegistrationStepExecutorConfig selectedExecutor;
     private List<RegistrationStepExecutorConfig> configuredExecutors = new ArrayList<>();
 
-    public int getOrder() {
+    // Write the default constructor for this class.
+    public RegistrationStep() {
 
-        return order;
     }
 
-    public void setOrder(int order) {
+    public String getId() {
 
-        this.order = order;
+        return id;
+    }
+
+    public void setId(String id) {
+
+        this.id = id;
     }
 
     public boolean isMultiOption() {
@@ -52,16 +56,6 @@ public class RegistrationStep implements Serializable {
     public void setMultiOption(boolean multiOption) {
 
         isMultiOption = multiOption;
-    }
-
-    public RegistrationFlowConstants.StepStatus getStatus() {
-
-        return status;
-    }
-
-    public void setStatus(RegistrationFlowConstants.StepStatus status) {
-
-        this.status = status;
     }
 
     public RegistrationStepExecutorConfig getSelectedExecutor() {
