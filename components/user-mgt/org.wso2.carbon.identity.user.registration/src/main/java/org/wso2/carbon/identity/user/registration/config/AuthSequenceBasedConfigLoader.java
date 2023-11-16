@@ -20,6 +20,8 @@ package org.wso2.carbon.identity.user.registration.config;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.cryptacular.codec.Base64Encoder;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
 import org.wso2.carbon.identity.application.common.model.AuthenticationStep;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
@@ -40,13 +42,18 @@ import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 import org.wso2.carbon.idp.mgt.IdentityProviderManager;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
 
+/**
+ * This class is responsible for loading the authentication sequence based on the login sequence of the application.
+ */
 public class AuthSequenceBasedConfigLoader {
 
     private static final Log LOG = LogFactory.getLog(AuthSequenceBasedConfigLoader.class);
@@ -61,13 +68,13 @@ public class AuthSequenceBasedConfigLoader {
         return instance;
     }
 
-    public RegistrationSequence deriveRegistrationSequence(String appId) throws RegistrationFrameworkException {
+    public RegistrationSequence deriveRegistrationSequence(String appId, String tenantDomain) throws RegistrationFrameworkException {
 
         ApplicationManagementService appInfo = ApplicationManagementService.getInstance();
 
         ServiceProvider sp;
         try {
-            sp = appInfo.getApplicationByResourceId(appId, "carbon.super" );
+            sp = appInfo.getApplicationByResourceId(appId, tenantDomain);
         } catch (IdentityApplicationManagementException e) {
             throw new RegistrationFrameworkException("Error occurred while retrieving service provider", e);
         }
@@ -109,7 +116,7 @@ public class AuthSequenceBasedConfigLoader {
         AuthenticationStep firstStep = authenticationSteps[0];
 
         // Load registration executors based on the authenticators.
-        RegistrationStep stepConfig = loadExecutors(firstStep);
+        RegistrationStep stepConfig = loadExecutors(firstStep, serviceProvider.getTenantDomain());
 
         if (stepConfig != null) {
             sequenceConfig.addStepDefinition(stepConfig);
@@ -122,37 +129,6 @@ public class AuthSequenceBasedConfigLoader {
         return sequenceConfig;
     }
 
-    private IdentityProvider getIdentityProvider(String idpName) throws RegistrationFrameworkException {
-
-        IdentityProviderDAO idpdao = ApplicationMgtSystemConfig.getInstance().getIdentityProviderDAO();
-        try {
-            return idpdao.getIdentityProvider(idpName);
-        } catch (IdentityApplicationManagementException e) {
-            throw new RegistrationFrameworkException("Cannot get the IdP: " + idpName, e);
-        }
-    }
-
-    private Map<String, String> getAuthenticatorPropertyMapFromIdP(IdentityProvider idp, String name) {
-
-        Map<String, String> propertyMap = new HashMap<String, String>();
-
-        if (idp != null) {
-            FederatedAuthenticatorConfig[] authenticatorConfigs = idp.getFederatedAuthenticatorConfigs();
-
-            for (FederatedAuthenticatorConfig authenticatorConfig : authenticatorConfigs) {
-
-                if (authenticatorConfig.getName().equals(name)) {
-
-                    for (Property property : authenticatorConfig.getProperties()) {
-                        propertyMap.put(property.getName(), property.getValue());
-                    }
-                    break;
-                }
-            }
-        }
-        return propertyMap;
-    }
-
     private RegistrationStepExecutor getRegStepExecutor(String name) {
 
         for (RegistrationStepExecutor executor : UserRegistrationServiceDataHolder.getRegistrationStepExecutors()) {
@@ -163,7 +139,7 @@ public class AuthSequenceBasedConfigLoader {
         return null;
     }
 
-    private RegistrationStep loadExecutors(AuthenticationStep authenticationStep)
+    private RegistrationStep loadExecutors(AuthenticationStep authenticationStep, String tenantDomain)
             throws RegistrationFrameworkException {
 
         List<RegistrationStepExecutorConfig> executorConfigs = new ArrayList<>();
@@ -171,9 +147,12 @@ public class AuthSequenceBasedConfigLoader {
         LocalAuthenticatorConfig[] localAuthenticators = authenticationStep.getLocalAuthenticatorConfigs();
         if (localAuthenticators != null) {
             // assign it to the step
+            IdentityProvider localIdp = new IdentityProvider();
+            localIdp.setIdentityProviderName(FrameworkConstants.LOCAL_IDP_NAME);
+
             for (LocalAuthenticatorConfig localAuthenticator : localAuthenticators) {
-                RegistrationStepExecutorConfig regStepConfig = getMappedRegExecutorConfig(
-                        localAuthenticator.getName(), localAuthenticator.getDisplayName());
+                RegistrationStepExecutorConfig regStepConfig = getMappedRegExecutorConfig(localAuthenticator.getName(),
+                        localAuthenticator.getName(), localIdp);
                 if (regStepConfig != null) {
                     executorConfigs.add(regStepConfig);
                 }
@@ -189,7 +168,7 @@ public class AuthSequenceBasedConfigLoader {
                 if (federatedAuthenticator == null) {
                     try {
                         federatedAuthenticator = IdentityProviderManager.getInstance()
-                                .getIdPByName(federatedIDP.getIdentityProviderName(), "carbon.super")
+                                .getIdPByName(federatedIDP.getIdentityProviderName(), tenantDomain)
                                 .getDefaultAuthenticatorConfig();
                     } catch (IdentityProviderManagementException e) {
                         throw new RegistrationFrameworkException("Failed to load the default authenticator for IDP : "
@@ -197,7 +176,7 @@ public class AuthSequenceBasedConfigLoader {
                     }
                 }
                 RegistrationStepExecutorConfig regStepConfig = getMappedRegExecutorConfig(
-                        federatedAuthenticator.getName(), federatedAuthenticator.getDisplayName()
+                        federatedIDP.getIdentityProviderName(), federatedAuthenticator.getName(), federatedIDP
                 );
                 if (regStepConfig != null) {
                     executorConfigs.add(regStepConfig);
@@ -217,7 +196,8 @@ public class AuthSequenceBasedConfigLoader {
         return stepConfig;
     }
 
-    private RegistrationStepExecutorConfig getMappedRegExecutorConfig(String idpName, String givenName)
+    private RegistrationStepExecutorConfig getMappedRegExecutorConfig(String idpName,
+                                                                      String authenticatorName, IdentityProvider idp)
             throws RegistrationFrameworkException {
 
         RegistrationStepExecutorConfig regStepConfig = new RegistrationStepExecutorConfig();
@@ -225,7 +205,7 @@ public class AuthSequenceBasedConfigLoader {
 
         for (RegistrationStepExecutor executor : UserRegistrationServiceDataHolder.getRegistrationStepExecutors()) {
             if (RegistrationFlowConstants.RegistrationExecutorBindingType.AUTHENTICATOR.equals(executor.getBindingType())
-                    && executor.getBoundIdentifier().equals(idpName)) {
+                    && executor.getBoundIdentifier().equals(authenticatorName)) {
                 mappedRegExecutor = executor;
                 break;
             }
@@ -234,10 +214,10 @@ public class AuthSequenceBasedConfigLoader {
         if (mappedRegExecutor == null) {
             return null;
         }
-        regStepConfig.setName(givenName);
-        regStepConfig.setId(idpName);
+        regStepConfig.setName(idpName);
+        regStepConfig.setId(Base64.getEncoder().encodeToString(idpName.getBytes(StandardCharsets.UTF_8)));
         regStepConfig.setExecutor(mappedRegExecutor);
-        regStepConfig.setIdentityProvider(getIdentityProvider(idpName));
+        regStepConfig.setIdentityProvider(idp);
 
         return regStepConfig;
     }

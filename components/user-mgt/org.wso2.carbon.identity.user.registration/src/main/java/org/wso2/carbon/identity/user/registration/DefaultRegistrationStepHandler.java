@@ -20,6 +20,9 @@ package org.wso2.carbon.identity.user.registration;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.application.authentication.framework.config.ConfigurationFacade;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.ExternalIdPConfig;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
 import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecutorConfig;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
@@ -30,14 +33,14 @@ import org.wso2.carbon.identity.user.registration.model.response.ExecutorRespons
 import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFrameworkUtils;
+import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.INCOMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.RegistrationExecutorBindingType.AUTHENTICATOR;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.SELECTION_PENDING;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.MULTI_OPTION;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.SINGLE_OPTION;
 
@@ -49,11 +52,6 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
     public static DefaultRegistrationStepHandler getInstance() {
 
         return instance;
-    }
-
-    public static void setInstance(DefaultRegistrationStepHandler instance) {
-
-        DefaultRegistrationStepHandler.instance = instance;
     }
 
     @Override
@@ -79,7 +77,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
                     stepResponse.setType(SINGLE_OPTION);
                     context.setCurrentStepStatus(NOT_STARTED);
                 } else {
-                    context.setCurrentStepStatus(SELECTION_PENDING);
+                     context.setCurrentStepStatus(SELECTION_PENDING);
                     stepResponse.setType(MULTI_OPTION);
                     stepResponse.setExecutors(loadMultiOptionsForStep(context, regExecutors));
                     // Further processing of the step is not possible without selecting an executor.
@@ -89,6 +87,19 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
         }
 
         RegistrationStepExecutorConfig regExecutor = step.getSelectedExecutor();
+
+        if (regExecutor != null && regExecutor.getExecutor().getBindingType() == AUTHENTICATOR) {
+
+            ExternalIdPConfig externalIdPConfig;
+            try {
+                externalIdPConfig = ConfigurationFacade.getInstance()
+                        .getIdPConfigByName(regExecutor.getName(), context.getTenantDomain());
+            } catch (IdentityProviderManagementException e) {
+                throw new RegistrationFrameworkException("Error while retrieving IdP configurations", e);
+            }
+            regExecutor.setAuthenticatorProperties(FrameworkUtils.getAuthenticatorPropertyMapFromIdP(
+                    externalIdPConfig, regExecutor.getExecutor().getBoundIdentifier()));
+        }
 
         context.setCurrentStepStatus(regExecutor.getExecutor().execute(request, context, stepResponse, regExecutor));
         return stepResponse;
@@ -117,7 +128,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
         for (RegistrationStepExecutorConfig regExecutor : regExecutors) {
             ExecutorResponse executorResponse = new ExecutorResponse();
             executorResponse.setName(regExecutor.getName());
-            executorResponse.setExecutorName(regExecutor.getName());
+            executorResponse.setExecutorName(regExecutor.getExecutor().getName());
             executorResponse.setId(regExecutor.getId());
             executorResponses.add(executorResponse);
 

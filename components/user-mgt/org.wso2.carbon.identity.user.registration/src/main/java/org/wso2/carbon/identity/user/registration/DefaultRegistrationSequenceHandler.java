@@ -54,12 +54,11 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
 
             RegistrationStep stepConfig= context.getRegistrationSequence().getStepDefinitions().get(currentStep);
 
-            // if the current step is completed
+            // If the current step is completed.
             if (stepConfig != null && RegistrationFlowConstants.StepStatus.COMPLETE.equals(context.getCurrentStepStatus())) {
 
                 // Check whether there are more steps to execute.
                 if (context.getRegistrationSequence().getStepDefinitions().size() == currentStep + 1) {
-                    LOG.info("TESTING: There are no more steps to execute.");
                     context.getRegistrationSequence().setCompleted(true);
                     continue;
                 }
@@ -70,9 +69,8 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
             RegistrationStepHandler registrationStepHandler = DefaultRegistrationStepHandler.getInstance();
             NextStepResponse response1 = registrationStepHandler.handle(request, context);
 
-            // if step is not completed, that means step wants to redirect to outside
+            // If step is not completed, that means step wants to redirect to outside.
             if (!RegistrationFlowConstants.StepStatus.COMPLETE.equals(context.getCurrentStepStatus())) {
-                LOG.info("TESTING: Step is not complete yet. Redirecting to outside.");
                 response.setStatus(RegistrationFlowConstants.Status.INCOMPLETE);
                 response.setNextStep(response1);
                 return response;
@@ -81,12 +79,11 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
 
         if (context.getRegistrationSequence().isCompleted()) {
             LOG.info("The registration is completed. Can trigger post registration steps.");
-            String userId = RegistrationFrameworkUtils.createUser(context.getRegisteringUser());
+            String userId = RegistrationFrameworkUtils.createUser(context.getRegisteringUser(), context.getTenantDomain());
             context.setCompleted(true);
             response.setStatus(RegistrationFlowConstants.Status.COMPLETE);
             response.setUserAssertion(userId);
         }
         return response;
     }
-
 }

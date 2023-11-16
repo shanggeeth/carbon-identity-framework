@@ -25,7 +25,7 @@ import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants
 
 public interface UserRegistrationFlowService {
 
-    public RegistrationResponse initiateUserRegistration(String appId,
+    public RegistrationResponse initiateUserRegistration(String appId, String tenantDomain,
                                                          RegistrationFlowConstants.SupportedProtocol type) throws RegistrationFrameworkException;
 
     public RegistrationResponse processIntermediateUserRegistration(RegistrationRequest request) throws RegistrationFrameworkException;

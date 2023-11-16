@@ -18,50 +18,40 @@
 
 package org.wso2.carbon.identity.user.registration.util;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
-import org.wso2.carbon.identity.application.common.model.AuthenticationStep;
+import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
-import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
-import org.wso2.carbon.identity.application.common.model.IdentityProvider;
-import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfig;
-import org.wso2.carbon.identity.application.common.model.Property;
-import org.wso2.carbon.identity.application.common.model.ServiceProvider;
-import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
-import org.wso2.carbon.identity.application.mgt.ApplicationMgtSystemConfig;
-import org.wso2.carbon.identity.application.mgt.dao.IdentityProviderDAO;
+import org.wso2.carbon.identity.application.mgt.ApplicationConstants;
+import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataHandler;
+import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.user.registration.DefaultRegistrationSequenceHandler;
 import org.wso2.carbon.identity.user.registration.RegistrationSequenceHandler;
-import org.wso2.carbon.identity.user.registration.RegistrationStepExecutor;
 import org.wso2.carbon.identity.user.registration.cache.RegistrationContextCache;
 import org.wso2.carbon.identity.user.registration.cache.RegistrationContextCacheEntry;
 import org.wso2.carbon.identity.user.registration.cache.RegistrationContextCacheKey;
 import org.wso2.carbon.identity.user.registration.config.AuthSequenceBasedConfigLoader;
 import org.wso2.carbon.identity.user.registration.config.RegistrationSequence;
-import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
-import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecutorConfig;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.internal.UserRegistrationServiceDataHolder;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequestedUser;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
-import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
-import org.wso2.carbon.idp.mgt.IdentityProviderManager;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.api.UserStoreManager;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
 import org.wso2.carbon.user.core.service.RealmService;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
+import java.util.stream.Collectors;
 
 public class RegistrationFrameworkUtils {
 
@@ -89,9 +79,9 @@ public class RegistrationFrameworkUtils {
         RegistrationContextCache.getInstance().clearCacheEntry(new RegistrationContextCacheKey(contextId));
     }
 
-    public static String createUser(RegistrationRequestedUser user) throws RegistrationFrameworkException {
+    public static String createUser(RegistrationRequestedUser user, String tenantDomain) throws RegistrationFrameworkException {
 
-        UserStoreManager userStoreManager = getUserstoreManager();
+        UserStoreManager userStoreManager = getUserstoreManager(tenantDomain);
         Map<String, String> claims = new HashMap<>();
 
         claims.put("http://wso2.org/claims/username", user.getUsername());
@@ -111,10 +101,10 @@ public class RegistrationFrameworkUtils {
         }
     }
 
-    private static UserStoreManager getUserstoreManager() throws RegistrationFrameworkException {
+    private static UserStoreManager getUserstoreManager(String tenantDomain) throws RegistrationFrameworkException {
 
         RealmService realmService = UserRegistrationServiceDataHolder.getRealmService();
-        int tenantId = IdentityTenantUtil.getTenantId("carbon.super");
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
         try {
             return realmService.getTenantUserRealm(tenantId).getUserStoreManager();
         } catch (UserStoreException e) {
@@ -122,11 +112,12 @@ public class RegistrationFrameworkUtils {
         }
     }
 
-    public static RegistrationContext initiateRegContext(String appId,
+    public static RegistrationContext initiateRegContext(String appId, String tenantDomain,
                                     RegistrationFlowConstants.SupportedProtocol type) throws RegistrationFrameworkException {
 
         RegistrationContext context = new RegistrationContext();
         context.setContextIdentifier(UUID.randomUUID().toString());
+        context.setTenantDomain(tenantDomain);
         context.setRequestType(type.toString());
         context.setCompleted(false);
         context.setCurrentStep(0);
@@ -134,7 +125,8 @@ public class RegistrationFrameworkUtils {
         RegistrationRequestedUser user = new RegistrationRequestedUser();
         context.setRegisteringUser(user);
 
-        RegistrationSequence sequence = AuthSequenceBasedConfigLoader.getInstance().deriveRegistrationSequence(appId);
+        RegistrationSequence sequence = AuthSequenceBasedConfigLoader.getInstance().deriveRegistrationSequence(appId,
+                tenantDomain);
         context.setRegistrationSequence(sequence);
 
         return context;
@@ -160,5 +152,64 @@ public class RegistrationFrameworkUtils {
             return DefaultRegistrationSequenceHandler.getInstance();
         }
         return null;
+    }
+
+    public static Map<String, String> convertClaimsFromIdpToLocalClaims(String tenantDomain,
+                                                                        Map<String, String> remoteClaims,
+                                                                        ClaimMapping[] idPClaimMappings,
+                                                                        String idPStandardDialect)
+    throws RegistrationFrameworkException {
+
+        Map<String, String> localToIdPClaimMap;
+
+        if (idPStandardDialect == null) {
+            idPStandardDialect = ApplicationConstants.LOCAL_IDP_DEFAULT_CLAIM_DIALECT;
+        }
+
+        try {
+            localToIdPClaimMap = getClaimMappings(idPStandardDialect, remoteClaims.keySet(), tenantDomain, true);
+        } catch (Exception e) {
+            throw new RegistrationFrameworkException("Error occurred while getting claim mappings for", e);
+        }
+        // Adding remote claims with default values also to the key set because they may not come from the federated IdP
+        localToIdPClaimMap.putAll(Arrays.stream(idPClaimMappings)
+                .filter(claimMapping -> StringUtils.isNotBlank(claimMapping.getDefaultValue())
+                        && !localToIdPClaimMap.containsKey(claimMapping.getLocalClaim().getClaimUri()))
+                .collect(Collectors.toMap(claimMapping -> claimMapping.getLocalClaim().getClaimUri(), ClaimMapping::getDefaultValue)));
+
+         Map<String, String> mappedLocalClaimsForIdPClaims = new HashMap<>();
+
+            for (Map.Entry<String, String> entry : localToIdPClaimMap.entrySet()) {
+                String localClaimURI = entry.getKey();
+                String claimValue = remoteClaims.get(localToIdPClaimMap.get(localClaimURI));
+                if (StringUtils.isEmpty(claimValue)) {
+                    LOG.debug("Claim " + localClaimURI + " has null value or blank hence not updating.");
+                } else {
+                    mappedLocalClaimsForIdPClaims.put(localClaimURI, claimValue);
+                }
+            }
+
+        return mappedLocalClaimsForIdPClaims;
+    }
+
+    // Copied from DefaultClaimHandler
+    private static Map<String, String> getClaimMappings(String otherDialect, Set<String> keySet,
+                                                 String tenantDomain, boolean useLocalDialectAsKey)
+            throws FrameworkException {
+
+        Map<String, String> claimMapping = null;
+        try {
+            claimMapping = ClaimMetadataHandler.getInstance()
+                    .getMappingsMapFromOtherDialectToCarbon(otherDialect, keySet, tenantDomain,
+                            useLocalDialectAsKey);
+        } catch (ClaimMetadataException e) {
+            throw new FrameworkException("Error while loading mappings.", e);
+        }
+
+        if (claimMapping == null) {
+            claimMapping = new HashMap<>();
+        }
+
+        return claimMapping;
     }
 }

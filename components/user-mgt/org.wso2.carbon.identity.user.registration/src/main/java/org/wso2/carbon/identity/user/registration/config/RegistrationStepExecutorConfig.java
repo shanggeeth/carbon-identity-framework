@@ -18,7 +18,6 @@
 
 package org.wso2.carbon.identity.user.registration.config;
 
-import org.wso2.carbon.identity.application.common.model.ClaimConfig;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.user.registration.RegistrationStepExecutor;
@@ -35,7 +34,7 @@ public class RegistrationStepExecutorConfig {
     private String name;
     private RegistrationStepExecutor executor;
     private IdentityProvider identityProvider;
-    private Map<String, String> properties = new HashMap<>();
+    private Map<String, String> authenticatorProperties = new HashMap<>();
     private ClaimMapping[] requestedClaims;
 
     public String getId() {
@@ -78,14 +77,14 @@ public class RegistrationStepExecutorConfig {
         this.identityProvider = identityProvider;
     }
 
-    public Map<String, String> getProperties() {
+    public Map<String, String> getAuthenticatorProperties() {
 
-        return properties;
+        return authenticatorProperties;
     }
 
-    public void setProperties(Map<String, String> properties) {
+    public void setAuthenticatorProperties(Map<String, String> authenticatorProperties) {
 
-        this.properties = properties;
+        this.authenticatorProperties = authenticatorProperties;
     }
 
     public ClaimMapping[] getRequestedClaims() {

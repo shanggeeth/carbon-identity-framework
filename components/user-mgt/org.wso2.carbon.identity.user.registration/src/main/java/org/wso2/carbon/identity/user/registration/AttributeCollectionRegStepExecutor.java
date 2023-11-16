@@ -91,18 +91,32 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
         if (NOT_STARTED.equals(status) ) {
 
             List<RequiredParam> params = new ArrayList<>();
+            List<RequiredParam> undefinedParams = new ArrayList<>();
 
             int displayOder = 0;
             for (ClaimMapping mapping : config.getRequestedClaims()) {
+                String claimUri = mapping.getRemoteClaim().getClaimUri();
                 RequiredParam param = new RequiredParam();
-                param.setName(mapping.getRemoteClaim().getClaimUri());
+                param.setName(claimUri);
                 param.setConfidential(false);
                 param.setMandatory(mapping.isMandatory());
                 param.setDataType(RegistrationFlowConstants.DataType.STRING); //TODO: Need to get the data type from the
                 param.setOrder(displayOder++);
                 param.setI18nKey("i18nKey_claim_should_support");
                 param.setValidationRegex("validationRegex_claim_should_support");
+
+                if (context.getRegisteringUser() != null && context.getRegisteringUser().getClaims() != null &&
+                        context.getRegisteringUser().getClaims().get(claimUri) != null) {
+                    param.setAvailableValue(context.getRegisteringUser().getClaims().get(claimUri));
+                } else {
+                    undefinedParams.add(param);
+                }
                 params.add(param);
+            }
+
+            // All the required attributes are already defined. Not need to prompt again.
+            if (undefinedParams.size() == 0) {
+                return COMPLETE;
             }
 
             Message message = new Message();
@@ -110,11 +124,13 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
             message.setType(RegistrationFlowConstants.MessageType.INFO);
 
             updateResponse(response, config, params, message);
+            context.updateRequestedParameterList(params);
 
             return USER_INPUT_REQUIRED;
         } else if (USER_INPUT_REQUIRED.equals(status) && registrationRequest.getInputs() != null) {
 
             Map<String, String> inputs = registrationRequest.getInputs();
+            List<RequiredParam> unsatisfiedParams = new ArrayList<>();
             RegistrationRequestedUser user =  context.getRegisteringUser();
             if (user == null) {
                 user = new RegistrationRequestedUser();
@@ -124,11 +140,25 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
             if (inputs.get("http://wso2.org/claims/username") != null) {
                 user.setUsername(inputs.get("http://wso2.org/claims/username"));
             }
-            if (user.getClaims() != null) {
-                user.getClaims().putAll(inputs);
-            } else {
-                user.setClaims(inputs);
+            for (RequiredParam param: context.getRequestedParameters()) {
+                if (param.getAvailableValue() != null) {
+                    // This is a predefined attribute so won't be updated.
+                    continue;
+                }
+                if (param.isMandatory() && inputs.get(param.getName()) == null) {
+                    unsatisfiedParams.add(param);
+                    // Mandatory attribute is not provided. So the step cannot be completed.
+                    continue;
+                }
+                if (inputs.get(param.getName()) != null) {
+                    user.addClaim(param.getName(), inputs.get(param.getName()));
+                }
+
             }
+            if (unsatisfiedParams.size() > 0) {
+                throw new RegistrationFrameworkException("Mandatory attributes are not provided.");
+            }
+
         return COMPLETE;
         }
         return INCOMPLETE;

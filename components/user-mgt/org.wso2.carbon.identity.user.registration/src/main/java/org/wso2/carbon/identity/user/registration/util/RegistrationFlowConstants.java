@@ -72,7 +72,7 @@ public class RegistrationFlowConstants {
      */
     public enum PromptType {
 
-        USER_PROMPT,
+        USER_PROMPT, REDIRECTION_PROMPT
     }
 
     /**

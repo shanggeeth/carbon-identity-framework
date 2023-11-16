@@ -38,10 +38,13 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
         return instance;
     }
 
-    public RegistrationResponse initiateUserRegistration(String appId, RegistrationFlowConstants.SupportedProtocol type)
+    @Override
+    public RegistrationResponse initiateUserRegistration(String appId,
+                                                         String tenantDomain,
+                                                         RegistrationFlowConstants.SupportedProtocol type)
             throws RegistrationFrameworkException {
 
-        RegistrationContext context = RegistrationFrameworkUtils.initiateRegContext(appId, type);
+        RegistrationContext context = RegistrationFrameworkUtils.initiateRegContext(appId, tenantDomain, type);
 
         RegistrationResponse response = RegistrationFrameworkUtils
                 .getRegistrationSeqHandler(context.getRegistrationSequence()).handle(new RegistrationRequest(), context);
@@ -49,6 +52,7 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
         return response;
     }
 
+    @Override
     public RegistrationResponse processIntermediateUserRegistration(RegistrationRequest request)
             throws RegistrationFrameworkException {
 
