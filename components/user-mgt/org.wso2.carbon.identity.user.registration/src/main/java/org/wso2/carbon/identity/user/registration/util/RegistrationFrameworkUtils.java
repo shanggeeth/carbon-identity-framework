@@ -21,8 +21,14 @@ package org.wso2.carbon.identity.user.registration.util;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator;
+import org.wso2.carbon.identity.application.authentication.framework.AuthenticationFlowHandler;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.AuthenticatorConfig;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.SequenceConfig;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
 import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
+import org.wso2.carbon.identity.application.common.util.IdentityApplicationManagementUtil;
 import org.wso2.carbon.identity.application.mgt.ApplicationConstants;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataHandler;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
@@ -211,5 +217,58 @@ public class RegistrationFrameworkUtils {
         }
 
         return claimMapping;
+    }
+
+    public String constructUserAssertion(String userId, RegistrationContext context){
+
+        StringBuilder jsonBuilder = new StringBuilder();
+
+        boolean subjectFoundInStep = false;
+        boolean subjectAttributesFoundInStep = false;
+        int stepCount = 1;
+        Map<String, String> mappedAttrs = new HashMap<>();
+        Map<ClaimMapping, String> authenticatedUserAttributes = new HashMap<>();
+
+        for (String satisfiedAuthenticator : context.getEngagedStepAuthenticators()) {
+
+        }
+
+        boolean isAuthenticatorExecuted = false;
+        for (Map.Entry<Integer, StepConfig> entry : sequenceConfig.getStepMap().entrySet()) {
+            StepConfig stepConfig = entry.getValue();
+            AuthenticatorConfig authenticatorConfig = stepConfig.getAuthenticatedAutenticator();
+            if (authenticatorConfig == null) {
+                //May have skipped from the script
+                //ex: Different authentication sequences evaluated by the script
+                continue;
+            }
+            ApplicationAuthenticator authenticator = authenticatorConfig.getApplicationAuthenticator();
+
+            if (!(authenticator instanceof AuthenticationFlowHandler)) {
+                isAuthenticatorExecuted = true;
+            }
+
+            // build the authenticated idps JWT to send to the calling servlet.
+            if (stepCount == 1) {
+                jsonBuilder.append("\"idps\":");
+                jsonBuilder.append("[");
+            }
+
+            // build the JSON object for this step
+            jsonBuilder.append("{");
+            jsonBuilder.append("\"idp\":\"").append(stepConfig.getAuthenticatedIdP()).append("\",");
+            jsonBuilder.append("\"authenticator\":\"").append(authenticator.getName()).append("\"");
+
+            if (stepCount != sequenceConfig.getStepMap().size()) {
+                jsonBuilder.append("},");
+            } else {
+                // wrap up the JSON object
+                jsonBuilder.append("}");
+                jsonBuilder.append("]");
+
+                sequenceConfig.setAuthenticatedIdPs(IdentityApplicationManagementUtil.getSignedJWT(
+                        jsonBuilder.toString(), sequenceConfig.getApplicationConfig()
+                                .getServiceProvider()));
+
     }
 }

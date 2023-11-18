@@ -86,6 +86,24 @@ public abstract class AbstractApplicationAuthenticator implements ApplicationAut
     public static final String ENABLE_RETRY_FROM_AUTHENTICATOR = "enableRetryFromAuthenticator";
 
     @Override
+    public boolean canHandleAutoLogin(HttpServletRequest request, AuthenticationContext context) {
+
+        if (request.getParameter("user_assertion") != null) {
+            String satisfiedAuthenticators = request.getParameter("user_assertion").toString();
+            if (satisfiedAuthenticators.contains(getName())) {
+                String usernameInCookie = "pamodaaw";
+                String userStoreDomain = "PRIMARY";
+                UserCoreUtil.setDomainInThreadLocal(userStoreDomain);
+                usernameInCookie = FrameworkUtils.prependUserStoreDomainToName(usernameInCookie);
+                context.setSubject(
+                        AuthenticatedUser.createLocalAuthenticatedUserFromSubjectIdentifier(usernameInCookie));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public AuthenticatorFlowStatus process(HttpServletRequest request,
                                            HttpServletResponse response, AuthenticationContext context)
             throws AuthenticationFailedException, LogoutFailedException {

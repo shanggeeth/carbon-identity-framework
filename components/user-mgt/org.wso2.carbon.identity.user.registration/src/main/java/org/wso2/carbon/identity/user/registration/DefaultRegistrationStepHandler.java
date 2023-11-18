@@ -32,6 +32,7 @@ import org.wso2.carbon.identity.user.registration.model.response.ExecutorMetadat
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
 import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
+import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFrameworkUtils;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.RegistrationExecutorBindingType.AUTHENTICATOR;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.COMPLETE;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.SELECTION_PENDING;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.MULTI_OPTION;
@@ -101,7 +103,12 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
                     externalIdPConfig, regExecutor.getExecutor().getBoundIdentifier()));
         }
 
-        context.setCurrentStepStatus(regExecutor.getExecutor().execute(request, context, stepResponse, regExecutor));
+        RegistrationFlowConstants.StepStatus stepStatus = regExecutor.getExecutor()
+                .execute(request, context, stepResponse, regExecutor);
+        if (stepStatus == COMPLETE) {
+            context.addEngagedStepAuthenticator(regExecutor.getExecutor().getBoundIdentifier());
+        }
+        context.setCurrentStepStatus(stepStatus);
         return stepResponse;
     }
 
