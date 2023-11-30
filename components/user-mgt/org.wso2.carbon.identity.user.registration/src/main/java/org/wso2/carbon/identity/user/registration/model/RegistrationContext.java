@@ -19,6 +19,7 @@
 package org.wso2.carbon.identity.user.registration.model;
 
 import org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator;
+import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.user.registration.config.RegistrationSequence;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
@@ -45,6 +46,7 @@ public class RegistrationContext implements Serializable {
     private List<String> engagedStepAuthenticators = new ArrayList<>();
     private boolean isCompleted;
     private Map<String, Object> properties = new HashMap<>();
+    private ServiceProvider serviceProvider;
 
     public int getCurrentStep() {
 
@@ -179,5 +181,15 @@ public class RegistrationContext implements Serializable {
     public List<String> getEngagedStepAuthenticators() {
 
         return engagedStepAuthenticators;
+    }
+
+    public ServiceProvider getServiceProvider() {
+
+        return serviceProvider;
+    }
+
+    public void setServiceProvider(ServiceProvider serviceProvider) {
+
+        this.serviceProvider = serviceProvider;
     }
 }

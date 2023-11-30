@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
@@ -28,6 +29,8 @@ import org.wso2.carbon.identity.user.registration.model.response.RegistrationRes
 import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFrameworkUtils;
+
+import java.util.Optional;
 
 public class DefaultRegistrationSequenceHandler implements RegistrationSequenceHandler{
 
@@ -82,7 +85,8 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
             String userId = RegistrationFrameworkUtils.createUser(context.getRegisteringUser(), context.getTenantDomain());
             context.setCompleted(true);
             response.setStatus(RegistrationFlowConstants.Status.COMPLETE);
-            response.setUserAssertion(userId);
+            Optional<String> encodedUserAssertion = RegistrationFrameworkUtils.getSignedUserAssertion(userId, context);
+            encodedUserAssertion.ifPresent(response::setUserAssertion);
         }
         return response;
     }

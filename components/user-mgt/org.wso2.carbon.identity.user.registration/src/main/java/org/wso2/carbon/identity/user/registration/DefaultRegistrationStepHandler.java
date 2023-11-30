@@ -105,8 +105,11 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
 
         RegistrationFlowConstants.StepStatus stepStatus = regExecutor.getExecutor()
                 .execute(request, context, stepResponse, regExecutor);
+        // If the step is completed and an authenticator is involved, add it to the engaged authenticators list.
         if (stepStatus == COMPLETE) {
-            context.addEngagedStepAuthenticator(regExecutor.getExecutor().getBoundIdentifier());
+            if (AUTHENTICATOR == regExecutor.getExecutor().getBindingType()) {
+                context.addEngagedStepAuthenticator(regExecutor.getExecutor().getBoundIdentifier());
+            }
         }
         context.setCurrentStepStatus(stepStatus);
         return stepResponse;

@@ -20,7 +20,6 @@ package org.wso2.carbon.identity.user.registration.config;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.cryptacular.codec.Base64Encoder;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
 import org.wso2.carbon.identity.application.common.model.AuthenticationStep;
@@ -28,16 +27,11 @@ import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfig;
-import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
-import org.wso2.carbon.identity.application.mgt.ApplicationMgtSystemConfig;
-import org.wso2.carbon.identity.application.mgt.dao.IdentityProviderDAO;
 import org.wso2.carbon.identity.user.registration.RegistrationStepExecutor;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.internal.UserRegistrationServiceDataHolder;
-import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
-import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 import org.wso2.carbon.idp.mgt.IdentityProviderManager;
@@ -45,11 +39,7 @@ import org.wso2.carbon.idp.mgt.IdentityProviderManager;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
 
 /**
  * This class is responsible for loading the authentication sequence based on the login sequence of the application.
@@ -68,31 +58,14 @@ public class AuthSequenceBasedConfigLoader {
         return instance;
     }
 
-    public RegistrationSequence deriveRegistrationSequence(String appId, String tenantDomain) throws RegistrationFrameworkException {
-
-        ApplicationManagementService appInfo = ApplicationManagementService.getInstance();
-
-        ServiceProvider sp;
-        try {
-            sp = appInfo.getApplicationByResourceId(appId, tenantDomain);
-        } catch (IdentityApplicationManagementException e) {
-            throw new RegistrationFrameworkException("Error occurred while retrieving service provider", e);
-        }
-        if (sp == null) {
-            throw new RegistrationFrameworkException("Service provider not found for app id: " + appId);
-        }
-        AuthenticationStep[] authenticationSteps =
-                sp.getLocalAndOutBoundAuthenticationConfig().getAuthenticationSteps();
-        return getSequenceFromServiceProvider(sp, authenticationSteps);
-    }
-
-
-    private RegistrationSequence getSequenceFromServiceProvider(ServiceProvider serviceProvider,
-                                                                AuthenticationStep[] authenticationSteps) throws RegistrationFrameworkException {
+    public RegistrationSequence deriveRegSequenceFromServiceProvider(ServiceProvider serviceProvider) throws RegistrationFrameworkException {
 
         if (serviceProvider == null) {
             throw new RegistrationFrameworkException("ServiceProvider cannot be null.");
         }
+        AuthenticationStep[] authenticationSteps =
+                serviceProvider.getLocalAndOutBoundAuthenticationConfig().getAuthenticationSteps();
+
         RegistrationSequence sequenceConfig = new RegistrationSequence();
         sequenceConfig.setApplicationId(serviceProvider.getApplicationName());
         sequenceConfig.setFlowDefinition(RegistrationFlowConstants.DEFAULT_FLOW_DEFINITION);

@@ -721,7 +721,15 @@ public class DefaultStepHandler implements StepHandler {
         try {
             context.setAuthenticatorProperties(FrameworkUtils.getAuthenticatorPropertyMapFromIdP(
                     context.getExternalIdP(), authenticator.getName()));
-            AuthenticatorFlowStatus status = authenticator.process(request, response, context);
+            AuthenticatorFlowStatus status;
+            if (authenticator.canHandleAutoLogin(request, context)) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug(authenticator.getName() + " can handle auto login");
+                }
+                status = AuthenticatorFlowStatus.SUCCESS_COMPLETED;
+            } else {
+                status = authenticator.process(request, response, context);
+            }
             request.setAttribute(FrameworkConstants.RequestParams.FLOW_STATUS, status);
             /* If this is an authentication initiation and the authenticator supports API based authentication
              we need to send the auth initiation data in order to support performing API based authentication.*/

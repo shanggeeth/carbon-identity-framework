@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration.util;
 
+import com.nimbusds.jwt.JWTClaimsSet;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,9 +28,13 @@ import org.wso2.carbon.identity.application.authentication.framework.config.mode
 import org.wso2.carbon.identity.application.authentication.framework.config.model.SequenceConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
 import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
+import org.wso2.carbon.identity.application.authentication.framework.util.AutoLoginAssertionUtils;
+import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
+import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.common.util.IdentityApplicationManagementUtil;
 import org.wso2.carbon.identity.application.mgt.ApplicationConstants;
+import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataHandler;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
@@ -51,10 +56,16 @@ import org.wso2.carbon.user.api.UserStoreManager;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
 import org.wso2.carbon.user.core.service.RealmService;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -131,12 +142,32 @@ public class RegistrationFrameworkUtils {
         RegistrationRequestedUser user = new RegistrationRequestedUser();
         context.setRegisteringUser(user);
 
-        RegistrationSequence sequence = AuthSequenceBasedConfigLoader.getInstance().deriveRegistrationSequence(appId,
-                tenantDomain);
+        ServiceProvider serviceProvider = retrieveSpFromAppId(appId, tenantDomain);
+        context.setServiceProvider(serviceProvider);
+
+        RegistrationSequence sequence =
+                AuthSequenceBasedConfigLoader.getInstance().deriveRegSequenceFromServiceProvider(serviceProvider);
         context.setRegistrationSequence(sequence);
 
         return context;
 
+    }
+
+    private static ServiceProvider retrieveSpFromAppId(String appId, String tenantDomain) throws  RegistrationFrameworkException{
+
+        ApplicationManagementService appInfo = ApplicationManagementService.getInstance();
+
+        ServiceProvider sp;
+        try {
+            sp = appInfo.getApplicationByResourceId(appId, tenantDomain);
+        } catch (IdentityApplicationManagementException e) {
+            throw new RegistrationFrameworkException("Error occurred while retrieving service provider", e);
+        }
+        if (sp == null) {
+            throw new RegistrationFrameworkException("Service provider not found for app id: " + appId);
+        }
+
+        return sp;
     }
 
     public static void updateAvailableValuesForRequiredParams(RegistrationContext context, List<RequiredParam> params) {
@@ -219,56 +250,51 @@ public class RegistrationFrameworkUtils {
         return claimMapping;
     }
 
-    public String constructUserAssertion(String userId, RegistrationContext context){
+    public static Optional<String> getSignedUserAssertion(String userId, RegistrationContext context) {
 
-        StringBuilder jsonBuilder = new StringBuilder();
-
-        boolean subjectFoundInStep = false;
-        boolean subjectAttributesFoundInStep = false;
-        int stepCount = 1;
-        Map<String, String> mappedAttrs = new HashMap<>();
-        Map<ClaimMapping, String> authenticatedUserAttributes = new HashMap<>();
-
-        for (String satisfiedAuthenticator : context.getEngagedStepAuthenticators()) {
-
+        JWTClaimsSet userAssertion = buildUserAssertionClaimSet(userId, context);
+        try {
+            return Optional.ofNullable(AutoLoginAssertionUtils.generateSignedUserAssertion(userAssertion,
+                    context.getTenantDomain()));
+        } catch (FrameworkException e) {
+            LOG.error("Error while generating signed user assertion", e);
+            return Optional.empty();
         }
+    }
 
-        boolean isAuthenticatorExecuted = false;
-        for (Map.Entry<Integer, StepConfig> entry : sequenceConfig.getStepMap().entrySet()) {
-            StepConfig stepConfig = entry.getValue();
-            AuthenticatorConfig authenticatorConfig = stepConfig.getAuthenticatedAutenticator();
-            if (authenticatorConfig == null) {
-                //May have skipped from the script
-                //ex: Different authentication sequences evaluated by the script
-                continue;
-            }
-            ApplicationAuthenticator authenticator = authenticatorConfig.getApplicationAuthenticator();
+    private static JWTClaimsSet buildUserAssertionClaimSet(String userId, RegistrationContext context) {
 
-            if (!(authenticator instanceof AuthenticationFlowHandler)) {
-                isAuthenticatorExecuted = true;
-            }
+        long curTimeInMillis = Calendar.getInstance().getTimeInMillis();
+        String[] engagedAuthenticators = context.getEngagedStepAuthenticators().toArray(new String[0]);
 
-            // build the authenticated idps JWT to send to the calling servlet.
-            if (stepCount == 1) {
-                jsonBuilder.append("\"idps\":");
-                jsonBuilder.append("[");
-            }
+        JWTClaimsSet.Builder jwtClaimsSetBuilder = new JWTClaimsSet.Builder();
+        jwtClaimsSetBuilder.issuer("wso2");
+        jwtClaimsSetBuilder.subject(context.getRegisteringUser().getUsername());
+        jwtClaimsSetBuilder.issueTime(new Date(curTimeInMillis));
+        jwtClaimsSetBuilder.jwtID(UUID.randomUUID().toString());
+        jwtClaimsSetBuilder.notBeforeTime(new Date(curTimeInMillis));
+        jwtClaimsSetBuilder.expirationTime(calculateUserAssertionExpiryTime(curTimeInMillis));
+        jwtClaimsSetBuilder.claim("amr", engagedAuthenticators );
+        jwtClaimsSetBuilder.claim("userId", userId);
 
-            // build the JSON object for this step
-            jsonBuilder.append("{");
-            jsonBuilder.append("\"idp\":\"").append(stepConfig.getAuthenticatedIdP()).append("\",");
-            jsonBuilder.append("\"authenticator\":\"").append(authenticator.getName()).append("\"");
+        return jwtClaimsSetBuilder.build();
+    }
 
-            if (stepCount != sequenceConfig.getStepMap().size()) {
-                jsonBuilder.append("},");
-            } else {
-                // wrap up the JSON object
-                jsonBuilder.append("}");
-                jsonBuilder.append("]");
+    private static Date calculateUserAssertionExpiryTime(long curTimeInMillis) {
 
-                sequenceConfig.setAuthenticatedIdPs(IdentityApplicationManagementUtil.getSignedJWT(
-                        jsonBuilder.toString(), sequenceConfig.getApplicationConfig()
-                                .getServiceProvider()));
-
+        Date expirationTime;
+        // Default value of 5min
+        long accessTokenLifeTimeInMillis = 5 * 60 * 1000;
+        // When accessTokenLifeTimeInMillis is equal to Long.MAX_VALUE the curTimeInMillis +
+        // accessTokenLifeTimeInMillis can be a negative value
+        if (curTimeInMillis + accessTokenLifeTimeInMillis < curTimeInMillis) {
+            expirationTime = new Date(Long.MAX_VALUE);
+        } else {
+            expirationTime = new Date(curTimeInMillis + accessTokenLifeTimeInMillis);
+        }
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("User assertion expiry time : " + expirationTime + "ms.");
+        }
+        return expirationTime;
     }
 }
