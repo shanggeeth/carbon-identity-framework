@@ -20,13 +20,14 @@ package org.wso2.carbon.identity.user.registration;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.osgi.framework.FrameworkUtil;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.response.RegistrationResponse;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFrameworkUtils;
+
+import javax.servlet.http.HttpServletRequest;
 
 public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowService{
 
@@ -46,6 +47,17 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
 
         RegistrationContext context = RegistrationFrameworkUtils.initiateRegContext(appId, tenantDomain, type);
 
+        RegistrationResponse response = RegistrationFrameworkUtils
+                .getRegistrationSeqHandler(context.getRegistrationSequence()).handle(new RegistrationRequest(), context);
+        RegistrationFrameworkUtils.addRegContextToCache(context);
+        return response;
+    }
+
+    @Override
+    public RegistrationResponse initiateUserRegistration(HttpServletRequest request)
+            throws RegistrationFrameworkException {
+
+        RegistrationContext context = RegistrationFrameworkUtils.initiateRegContext(request);
         RegistrationResponse response = RegistrationFrameworkUtils
                 .getRegistrationSeqHandler(context.getRegistrationSequence()).handle(new RegistrationRequest(), context);
         RegistrationFrameworkUtils.addRegContextToCache(context);

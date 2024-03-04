@@ -22,13 +22,17 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.base.MultitenantConstants;
 import org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticationFlowHandler;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.AuthenticatorConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.SequenceConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
 import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
+import org.wso2.carbon.identity.application.authentication.framework.internal.FrameworkServiceComponent;
 import org.wso2.carbon.identity.application.authentication.framework.util.AutoLoginAssertionUtils;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
+import org.wso2.carbon.identity.application.common.IdentityApplicationManagementClientException;
 import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
@@ -51,11 +55,13 @@ import org.wso2.carbon.identity.user.registration.internal.UserRegistrationServi
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequestedUser;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
+import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.api.UserStoreManager;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
 import org.wso2.carbon.user.core.service.RealmService;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -69,6 +75,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.INITIAL_AUTH_REQUEST;
 
 public class RegistrationFrameworkUtils {
 
@@ -136,21 +144,85 @@ public class RegistrationFrameworkUtils {
         context.setContextIdentifier(UUID.randomUUID().toString());
         context.setTenantDomain(tenantDomain);
         context.setRequestType(type.toString());
-        context.setCompleted(false);
-        context.setCurrentStep(0);
 
-        RegistrationRequestedUser user = new RegistrationRequestedUser();
-        context.setRegisteringUser(user);
+        ServiceProvider sp = retrieveSpFromAppId(appId, tenantDomain);
 
-        ServiceProvider serviceProvider = retrieveSpFromAppId(appId, tenantDomain);
-        context.setServiceProvider(serviceProvider);
-
-        RegistrationSequence sequence =
-                AuthSequenceBasedConfigLoader.getInstance().deriveRegSequenceFromServiceProvider(serviceProvider);
-        context.setRegistrationSequence(sequence);
+        updateContext(context, sp);
 
         return context;
 
+    }
+
+    public static RegistrationContext initiateRegContext(HttpServletRequest request) throws RegistrationFrameworkException {
+
+        RegistrationContext context = new RegistrationContext();
+        context.setContextIdentifier(request.getParameter("sessionDataKey"));
+        context.setTenantDomain(getTenantDomain(request));
+        context.setRequestType(request.getParameter("type"));
+        context.setProperty(INITIAL_AUTH_REQUEST, request);
+
+        ServiceProvider sp = retrieveSpFromClientId(request.getParameter("clientId"), context.getTenantDomain());
+        updateContext(context, sp);
+
+        return context;
+    }
+
+    private static void updateContext(RegistrationContext context, ServiceProvider sp) throws RegistrationFrameworkException {
+
+        RegistrationRequestedUser user = new RegistrationRequestedUser();
+        context.setRegisteringUser(user);
+        context.setCompleted(false);
+        context.setCurrentStep(0);
+
+        RegistrationSequence sequence =
+                AuthSequenceBasedConfigLoader.getInstance().deriveRegSequenceFromServiceProvider(sp);
+
+        context.setServiceProvider(sp);
+        context.setRegistrationSequence(sequence);
+
+    }
+
+    private static String getTenantDomain(HttpServletRequest request) throws RegistrationFrameworkException {
+
+        if (IdentityTenantUtil.isTenantQualifiedUrlsEnabled()) {
+            return IdentityTenantUtil.getTenantDomainFromContext();
+        }
+        String tenantDomain = request.getParameter(FrameworkConstants.RequestParams.TENANT_DOMAIN);
+
+        if (tenantDomain == null || tenantDomain.isEmpty() || "null".equals(tenantDomain)) {
+
+            String tenantId = request.getParameter(FrameworkConstants.RequestParams.TENANT_ID);
+
+            if (tenantId != null && !"-1234".equals(tenantId)) {
+                try {
+                    Tenant tenant = UserRegistrationServiceDataHolder.getRealmService().getTenantManager()
+                            .getTenant(Integer.parseInt(tenantId));
+                    if (tenant != null) {
+                        tenantDomain = tenant.getDomain();
+                    }
+                } catch (Exception e) {
+                    throw new RegistrationFrameworkException("Cannot retrieve tenant domain.");
+                }
+            } else {
+                tenantDomain = MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
+            }
+        }
+        return tenantDomain;
+    }
+
+    private static ServiceProvider retrieveSpFromClientId(String clientId, String tenantDomain)
+            throws RegistrationFrameworkException {
+
+        ApplicationManagementService appMgtService = ApplicationManagementService.getInstance();
+
+        try {
+            return appMgtService.getServiceProviderByClientId(clientId, FrameworkConstants.OAUTH2,
+                    tenantDomain);
+        } catch (IdentityApplicationManagementClientException e) {
+            throw new RegistrationFrameworkException("Unable to find application", e);
+        } catch (IdentityApplicationManagementException e) {
+            throw new RegistrationFrameworkException("Unable to retrieve application", e);
+        }
     }
 
     private static ServiceProvider retrieveSpFromAppId(String appId, String tenantDomain) throws  RegistrationFrameworkException{

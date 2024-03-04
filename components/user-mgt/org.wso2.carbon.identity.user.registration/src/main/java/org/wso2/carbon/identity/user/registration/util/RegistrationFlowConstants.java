@@ -21,6 +21,7 @@ package org.wso2.carbon.identity.user.registration.util;
 public class RegistrationFlowConstants {
 
     public final static String DEFAULT_FLOW_DEFINITION = "default";
+    public final static String INITIAL_AUTH_REQUEST = "initialAuthRequest";
 
     public enum Status {
 
