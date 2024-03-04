@@ -51,8 +51,6 @@ import org.wso2.carbon.identity.application.authentication.framework.config.mode
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JSExecutionSupervisor;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsBaseGraphBuilderFactory;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsFunctionRegistryImpl;
-import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsGraphBuilderFactory;
-import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.openjdk.nashorn.JsOpenJdkNashornGraphBuilderFactory;
 import org.wso2.carbon.identity.application.authentication.framework.dao.impl.CacheBackedLongWaitStatusDAO;
 import org.wso2.carbon.identity.application.authentication.framework.dao.impl.LongWaitStatusDAOImpl;
 import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
@@ -146,9 +144,7 @@ public class FrameworkServiceComponent {
     private static final String LOGIN_CONTEXT_SERVLET_URL = "/logincontext";
     private static final String LONGWAITSTATUS_SERVLET_URL = "/longwaitstatus";
     private static final Log log = LogFactory.getLog(FrameworkServiceComponent.class);
-
-    private static final String OPENJDK_SCRIPTER_CLASS_NAME = "org.openjdk.nashorn.api.scripting.ScriptObjectMirror";
-    private static final String JDK_SCRIPTER_CLASS_NAME = "jdk.nashorn.api.scripting.ScriptObjectMirror";
+    private static final String API_AUTH = "APIAuth";
 
     private HttpService httpService;
     private ConsentMgtPostAuthnHandler consentMgtPostAuthnHandler = new ConsentMgtPostAuthnHandler();
@@ -280,7 +276,7 @@ public class FrameworkServiceComponent {
         UIBasedConfigurationLoader uiBasedConfigurationLoader = new UIBasedConfigurationLoader();
         dataHolder.setSequenceLoader(uiBasedConfigurationLoader);
 
-        JsBaseGraphBuilderFactory jsGraphBuilderFactory = createJsGraphBuilderFactoryFromConfig();
+        JsBaseGraphBuilderFactory jsGraphBuilderFactory = FrameworkUtils.createJsGraphBuilderFactoryFromConfig();
         if (jsGraphBuilderFactory != null) {
             bundleContext.registerService(JsFunctionRegistry.class, dataHolder.getJsFunctionRegistry(), null);
             dataHolder.setAdaptiveAuthenticationAvailable(true);
@@ -356,13 +352,17 @@ public class FrameworkServiceComponent {
         FrameworkUtils.checkIfTenantIdColumnIsAvailableInFedAuthTable();
         // Check whether the IDP_ID column is available in the IDN_FED_AUTH_SESSION_MAPPING table.
         FrameworkUtils.checkIfIdpIdColumnIsAvailableInFedAuthTable();
-        
+
         // Set user session mapping enabled.
         FrameworkServiceDataHolder.getInstance().setUserSessionMappingEnabled(FrameworkUtils
                 .isUserSessionMappingEnabled());
         if (FrameworkServiceDataHolder.getInstance().getSessionSerializer() == null) {
             FrameworkServiceDataHolder.getInstance().setSessionSerializer(new JavaSessionSerializer());
         }
+
+        // Set skip local user search for authentication flow handlers enabled.
+        FrameworkServiceDataHolder.getInstance().setSkipLocalUserSearchForAuthenticationFlowHandlersEnabled
+                (FrameworkUtils.isSkipLocalUserSearchForAuthenticationFlowHandlersEnabled());
 
         bundleContext.registerService(ApplicationAuthenticationService.class.getName(), new
                 ApplicationAuthenticationService(), null);
@@ -501,7 +501,7 @@ public class FrameworkServiceComponent {
             localAuthenticatorConfig.setName(authenticator.getName());
             localAuthenticatorConfig.setProperties(configProperties);
             localAuthenticatorConfig.setDisplayName(authenticator.getFriendlyName());
-            localAuthenticatorConfig.setTags(authenticator.getTags());
+            localAuthenticatorConfig.setTags(getTags(authenticator));
             AuthenticatorConfig fileBasedConfig = getAuthenticatorConfig(authenticator.getName());
             localAuthenticatorConfig.setEnabled(fileBasedConfig.isEnabled());
             ApplicationAuthenticatorService.getInstance().addLocalAuthenticator(localAuthenticatorConfig);
@@ -510,14 +510,14 @@ public class FrameworkServiceComponent {
             federatedAuthenticatorConfig.setName(authenticator.getName());
             federatedAuthenticatorConfig.setProperties(configProperties);
             federatedAuthenticatorConfig.setDisplayName(authenticator.getFriendlyName());
-            federatedAuthenticatorConfig.setTags(authenticator.getTags());
+            federatedAuthenticatorConfig.setTags(getTags(authenticator));
             ApplicationAuthenticatorService.getInstance().addFederatedAuthenticator(federatedAuthenticatorConfig);
         } else if (authenticator instanceof RequestPathApplicationAuthenticator) {
             RequestPathAuthenticatorConfig reqPathAuthenticatorConfig = new RequestPathAuthenticatorConfig();
             reqPathAuthenticatorConfig.setName(authenticator.getName());
             reqPathAuthenticatorConfig.setProperties(configProperties);
             reqPathAuthenticatorConfig.setDisplayName(authenticator.getFriendlyName());
-            reqPathAuthenticatorConfig.setTags(authenticator.getTags());
+            reqPathAuthenticatorConfig.setTags(getTags(authenticator));
             AuthenticatorConfig fileBasedConfig = getAuthenticatorConfig(authenticator.getName());
             reqPathAuthenticatorConfig.setEnabled(fileBasedConfig.isEnabled());
             ApplicationAuthenticatorService.getInstance().addRequestPathAuthenticator(reqPathAuthenticatorConfig);
@@ -526,6 +526,20 @@ public class FrameworkServiceComponent {
         if (log.isDebugEnabled()) {
             log.debug("Added application authenticator : " + authenticator.getName());
         }
+    }
+
+    private static String[] getTags(ApplicationAuthenticator authenticator) {
+
+        if (!authenticator.isAPIBasedAuthenticationSupported()) {
+            return authenticator.getTags();
+        }
+
+        List<String> tagList = new ArrayList<>();
+        if (authenticator.getTags() != null) {
+            Collections.addAll(tagList, authenticator.getTags());
+        }
+        tagList.add(API_AUTH);
+        return tagList.toArray(new String[0]);
     }
 
     @Reference(
@@ -972,33 +986,6 @@ public class FrameworkServiceComponent {
 
         FrameworkServiceDataHolder.getInstance().setIdentityProviderManager(null);
     }
-
-    private JsBaseGraphBuilderFactory createJsGraphBuilderFactoryFromConfig() {
-
-        String scriptEngineName = IdentityUtil.getProperty(FrameworkConstants.SCRIPT_ENGINE_CONFIG);
-        if (scriptEngineName != null) {
-            if (StringUtils.equalsIgnoreCase(FrameworkConstants.OPENJDK_NASHORN, scriptEngineName)) {
-                return new JsOpenJdkNashornGraphBuilderFactory();
-            }
-        }
-        // Config is not set. Hence going with class for name approach.
-        return createJsGraphBuilderFactory();
-    };
-
-    private JsBaseGraphBuilderFactory createJsGraphBuilderFactory() {
-
-        try {
-            Class.forName(OPENJDK_SCRIPTER_CLASS_NAME);
-            return new JsOpenJdkNashornGraphBuilderFactory();
-        } catch (ClassNotFoundException e) {
-            try {
-                Class.forName(JDK_SCRIPTER_CLASS_NAME);
-                return new JsGraphBuilderFactory();
-            } catch (ClassNotFoundException classNotFoundException) {
-                return null;
-            }
-        }
-    };
 
     @Reference(
             service = ApplicationManagementService.class,

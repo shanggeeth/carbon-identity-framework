@@ -18,12 +18,14 @@
 
 package org.wso2.carbon.identity.role.v2.mgt.core;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.wso2.carbon.identity.role.v2.mgt.core.exception.IdentityRoleManagementException;
 import org.wso2.carbon.identity.role.v2.mgt.core.model.GroupBasicInfo;
 import org.wso2.carbon.identity.role.v2.mgt.core.model.IdpGroup;
 import org.wso2.carbon.identity.role.v2.mgt.core.model.Permission;
 import org.wso2.carbon.identity.role.v2.mgt.core.model.Role;
 import org.wso2.carbon.identity.role.v2.mgt.core.model.RoleBasicInfo;
+import org.wso2.carbon.identity.role.v2.mgt.core.model.RoleDTO;
 import org.wso2.carbon.identity.role.v2.mgt.core.model.UserBasicInfo;
 
 import java.util.List;
@@ -69,6 +71,24 @@ public interface RoleManagementService {
     /**
      * Retrieve available roles.
      *
+     * @param limit              Limit value.
+     * @param offset             Offset value.
+     * @param sortBy             SortBy value.
+     * @param sortOrder          Sort order value.
+     * @param tenantDomain       Tenant domain.
+     * @param requiredAttributes Required attributes.
+     * @return List of roles.
+     * @throws IdentityRoleManagementException IdentityRoleManagementException.
+     */
+    default List<Role> getRoles(Integer limit, Integer offset, String sortBy, String sortOrder, String tenantDomain,
+                                            List<String> requiredAttributes) throws IdentityRoleManagementException {
+
+        throw new NotImplementedException("getRoles method is not implemented");
+    }
+
+    /**
+     * Retrieve available roles.
+     *
      * @param filter       Filter for the Role ID.
      * @param limit        Limit value.
      * @param offset       Offset value.
@@ -83,6 +103,26 @@ public interface RoleManagementService {
             throws IdentityRoleManagementException;
 
     /**
+     * Retrieve available roles.
+     *
+     * @param filter             Filter for the Role ID.
+     * @param limit              Limit value.
+     * @param offset             Offset value.
+     * @param sortBy             SortBy value.
+     * @param sortOrder          Sort order value.
+     * @param tenantDomain       Tenant domain.
+     * @param requiredAttributes Required attributes.
+     * @return List of roles.
+     * @throws IdentityRoleManagementException IdentityRoleManagementException.
+     */
+    default List<Role> getRoles(String filter, Integer limit, Integer offset, String sortBy, String sortOrder,
+                                String tenantDomain, List<String> requiredAttributes)
+            throws IdentityRoleManagementException {
+
+        throw new NotImplementedException("getRoles method is not implemented");
+    }
+
+    /**
      * Retrieve the given role.
      *
      * @param roleId       Role ID.
@@ -91,6 +131,15 @@ public interface RoleManagementService {
      * @throws IdentityRoleManagementException IdentityRoleManagementException.
      */
     Role getRole(String roleId, String tenantDomain) throws IdentityRoleManagementException;
+
+    /**
+     * Retrieve the given role.
+     *
+     * @param roleId       Role ID.
+     * @return The role object.
+     * @throws IdentityRoleManagementException IdentityRoleManagementException.
+     */
+    Role getRole(String roleId) throws IdentityRoleManagementException;
 
     /**
      * Get role basic info by id.
@@ -401,4 +450,16 @@ public interface RoleManagementService {
      */
     List<String> getAssociatedApplicationByRoleId(String roleId, String tenantDomain)
             throws IdentityRoleManagementException;
+
+    /**
+     * Get shared hybrid roles for the given main role ID.
+     *
+     * @param roleId   The main role ID.
+     * @param tenantId The tenant ID.
+     * @throws IdentityRoleManagementException IdentityRoleManagementException.
+     */
+    default List<RoleDTO> getSharedHybridRoles(String roleId, int tenantId) throws IdentityRoleManagementException {
+
+        return null;
+    }
 }

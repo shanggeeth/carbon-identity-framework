@@ -25,6 +25,7 @@ public class IdPManagementConstants {
 
     public static final String SHARED_IDP_PREFIX = "SHARED_";
     public static final String SCOPE_LIST_PLACEHOLDER = "_SCOPE_LIST_";
+    public static final String IDP_GROUP_LIST_PLACEHOLDER = "_IDP_GROUP_LIST_";
     public static final String MULTI_VALUED_PROPERTY_CHARACTER = ".";
     public static final String IS_TRUE_VALUE = "1";
     public static final String IS_FALSE_VALUE = "0";
@@ -114,6 +115,11 @@ public class IdPManagementConstants {
     public static final String SCIM2 = "SCIM2";
 
     public static final String IS_TRUSTED_TOKEN_ISSUER = "isTrustedTokenIssuer";
+
+    // Email OTP properties.
+    public static final String EMAIL_OTP_AUTHENTICATOR_NAME = "EmailOTP";
+    public static final String EMAIL_OTP_ONLY_NUMERIC_CHARS_PROPERTY = "OnlyNumericCharactersForOtp";
+    public static final String EMAIL_OTP_USE_ALPHANUMERIC_CHARS_PROPERTY = "AlphanumericCharactersForOtp";
 
     public static class SQLQueries {
 
@@ -465,11 +471,11 @@ public class IdPManagementConstants {
         public static final String GET_CONNECTED_APPS_ORACLE = "SELECT UUID FROM (SELECT UUID, ROWNUM AS RNUM FROM ( " +
                 "SELECT UUID FROM (SP_AUTH_STEP INNER JOIN SP_FEDERATED_IDP ON SP_AUTH_STEP.ID = SP_FEDERATED_IDP.ID)" +
                 " INNER JOIN SP_APP ON SP_AUTH_STEP.APP_ID = SP_APP.ID WHERE AUTHENTICATOR_ID IN ( SELECT ID FROM " +
-                "IDP_AUTHENTICATOR WHERE IDP_ID = ( SELECT ID FROM IDP WHERE UUID = ?)) UNION (SELECT SP_APP.UUID, " +
+                "IDP_AUTHENTICATOR WHERE IDP_ID = ( SELECT ID FROM IDP WHERE UUID = ?)) UNION (SELECT SP_APP.UUID " +
                 "FROM SP_PROVISIONING_CONNECTOR INNER JOIN SP_APP ON " +
                 " SP_PROVISIONING_CONNECTOR.APP_ID = SP_APP.ID WHERE SP_APP.TENANT_ID = " +
                 "(SELECT TENANT_ID FROM IDP WHERE IDP.UUID = ? AND IDP_NAME = " +
-                "(SELECT NAME FROM IDP WHERE IDP.UUID = ?))) WHERE ROWNUM <= ?) WHERE RNUM > ?";
+                "(SELECT NAME FROM IDP WHERE IDP.UUID = ?)))) WHERE ROWNUM <= ?) WHERE RNUM > ?";
         public static final String GET_CONNECTED_APPS_MSSQL = "(SELECT UUID, SP_APP.ID FROM SP_AUTH_STEP INNER JOIN " +
                 "SP_FEDERATED_IDP ON SP_AUTH_STEP.ID=SP_FEDERATED_IDP.ID INNER JOIN SP_APP ON SP_AUTH_STEP" +
                 ".APP_ID=SP_APP.ID WHERE AUTHENTICATOR_ID IN (SELECT ID FROM IDP_AUTHENTICATOR WHERE IDP_ID = (SELECT" +
@@ -553,6 +559,9 @@ public class IdPManagementConstants {
                 "IDP_METADATA.TENANT_ID = ?";
         public static final String GET_TOTAL_IDP_CLAIM_USAGES = "SELECT COUNT(*) FROM IDP_CLAIM_MAPPING WHERE " +
                 "TENANT_ID = ? AND LOCAL_CLAIM = ?";
+        public static final String GET_IDP_GROUPS_BY_IDP_GROUP_IDS = "SELECT IDP_GROUP.UUID, IDP_GROUP.GROUP_NAME, " +
+                "IDP.UUID AS IDP_ID FROM IDP_GROUP LEFT JOIN IDP ON IDP.ID = IDP_GROUP.IDP_ID WHERE " +
+                "IDP_GROUP.TENANT_ID = ? AND IDP_GROUP.UUID IN (" + IDP_GROUP_LIST_PLACEHOLDER + ")";
     }
 
     public enum ErrorMessage {
@@ -585,7 +594,8 @@ public class IdPManagementConstants {
         ERROR_CODE_RETRIEVE_IDP_CONNECTED_APPS("IDP-65007", "Error while retrieving connected " +
                 "applications of Identity Provider with resource ID: %s."),
         ERROR_CODE_VALIDATING_OUTBOUND_PROVISIONING_ROLES("IDP-65008", "Error while validating " +
-                "the outbound provisioning roles");
+                "the outbound provisioning roles"),
+        ERROR_CODE_RETRIEVING_IDP_GROUPS("IDP-65009", "Error while retrieving IDP groups");
 
         private final String code;
         private final String message;

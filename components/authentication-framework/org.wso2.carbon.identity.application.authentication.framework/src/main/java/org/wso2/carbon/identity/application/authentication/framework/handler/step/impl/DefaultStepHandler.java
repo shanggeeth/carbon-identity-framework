@@ -553,7 +553,8 @@ public class DefaultStepHandler implements StepHandler {
 
             if (authenticatedStepIdps.containsKey(idpName)
                     && !(context.isForceAuthenticate() || stepConfig.isForced())
-                    && !context.isReAuthenticate()) {
+                    && !context.isReAuthenticate()
+                    && !FrameworkConstants.ORGANIZATION_LOGIN_HOME_REALM_IDENTIFIER.equals(homeRealm)) {
                 // skip the step if this is a normal request
                 AuthenticatedIdPData authenticatedIdPData = authenticatedIdPs.get(idpName);
                 populateStepConfigWithAuthenticationDetails(stepConfig, authenticatedIdPData, authenticatedStepIdps
@@ -1451,7 +1452,8 @@ public class DefaultStepHandler implements StepHandler {
     private void handleAPIBasedAuthenticationData(HttpServletRequest request, ApplicationAuthenticator authenticator,
                                                   AuthenticationContext context) throws AuthenticationFailedException {
 
-        if (isAPIBasedAuthenticationFlow(request) && authenticator.isAPIBasedAuthenticationSupported()) {
+        if (FrameworkUtils.isAPIBasedAuthenticationFlow(request)
+                && authenticator.isAPIBasedAuthenticationSupported()) {
             authenticator.getAuthInitiationData(context).ifPresent(authInitiationData -> {
                 List<AuthenticatorData> authInitiationDataList =
                         (List<AuthenticatorData>) request
@@ -1464,10 +1466,5 @@ public class DefaultStepHandler implements StepHandler {
                 authInitiationDataList.add(authInitiationData);
             });
         }
-    }
-
-    private boolean isAPIBasedAuthenticationFlow(HttpServletRequest request) {
-
-        return Boolean.TRUE.equals(request.getAttribute(FrameworkConstants.IS_API_BASED_AUTH_FLOW));
     }
 }

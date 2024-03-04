@@ -29,6 +29,7 @@ public abstract class FrameworkConstants {
     public static final String DEFAULT_SEQUENCE = "default";
     public static final String AUTHENTICATED_AUTHENTICATORS = "authenticatedAuthenticators";
     public static final String REDIRECT_URL = "REDIRECT_URL";
+    public static final String IS_API_BASED = "IS_API_BASED";
     public static final String COMMONAUTH_COOKIE = "commonAuthId";
     public static final String ALLOW_SESSION_CREATION = "allowSessionCreation";
     public static final String CONTEXT_PROP_INVALID_EMAIL_USERNAME = "InvalidEmailUsername";
@@ -125,6 +126,7 @@ public abstract class FrameworkConstants {
     public static final String POST_AUTH_MISSING_CLAIMS_ERROR_CODE = "postAuthMissingClaimsErrorCode";
 
     public static final String REQUEST_PARAM_SP = "sp";
+    public static final String REQUEST_PARAM_SP_UUID = "spId";
     public static final String REQUEST_PARAM_ERROR_KEY = "errorKey";
     public static final String REQUEST_PARAM_AUTH_FLOW_ID = "authFlowId";
     public static final String MAPPED_ATTRIBUTES = "MappedAttributes";
@@ -135,6 +137,8 @@ public abstract class FrameworkConstants {
     public static final String JIT_PROVISIONING_FLOW = "JITProvisioningFlow";
     public static final String ALLOW_LOGIN_TO_IDP = "JITProvisioning.AllowLoginToIDP";
     public static final String SECRET_KEY_CLAIM_URL = "http://wso2.org/claims/identity/secretkey";
+    public static final String ENABLE_ENCRYPTION = "EnableEncryption";
+    public static final String TOTP_KEY = "CryptoService.TotpSecret";
     public static final String IDP_RESOURCE_ID = "IDPResourceID";
     public static final String ENABLE_JIT_PROVISION_ENHANCE_FEATURE = "JITProvisioning.EnableEnhancedFeature";
     public static final String ERROR_CODE_INVALID_ATTRIBUTE_UPDATE = "SUO-10000";
@@ -147,6 +151,7 @@ public abstract class FrameworkConstants {
     public static final String AUTHENTICATION_CONTEXT_PROPERTIES = "AUTHENTICATION_CONTEXT_PROPERTIES";
     public static final String ORGANIZATION_USER_PROPERTIES = "ORGANIZATION_USER_PROPERTIES";
     public static final String ORGANIZATION_AUTHENTICATOR = "OrganizationAuthenticator";
+    public static final String ORGANIZATION_LOGIN_HOME_REALM_IDENTIFIER = "OrganizationSSO";
     public static final String ORG_ID_PARAMETER = "orgId";
     public static final String USER_ORGANIZATION_CLAIM = "user_organization";
     public static final String SESSION_AUTH_HISTORY = "SESSION_AUTH_HISTORY";
@@ -178,6 +183,10 @@ public abstract class FrameworkConstants {
 
     public static final String FEDERATED_IDP_ROLE_CLAIM_VALUE_SEPARATOR =
             "FederatedIDPRoleClaimValueAttributeSeparator";
+    public static final String FEDERATED_IDP_GROUP_CLAIM_VALUE_SEPARATOR =
+            "FederatedIDPGroupClaimValueAttributeSeparator";
+    public static final String USE_IDP_ROLE_CLAIM_AS_IDP_GROUP_CLAIM =
+            "UseIDPRoleClaimAsIDPGroupClaim";
 
     // Current session thread local identifier.
     public static final String CURRENT_SESSION_IDENTIFIER = "currentSessionIdentifier";
@@ -216,6 +225,7 @@ public abstract class FrameworkConstants {
     public static final String ORACLE = "Oracle";
 
     public static final String SCRIPT_ENGINE_CONFIG = "AdaptiveAuth.ScriptEngine";
+    public static final String THREAD_LOCAL_SCRIPT_ENGINE_CONFIG = "AdaptiveAuth.LimitScriptEngineCreation";
     public static final String OPENJDK_NASHORN = "openjdkNashorn";
     public static final String NASHORN = "nashorn";
 
@@ -237,8 +247,13 @@ public abstract class FrameworkConstants {
     public static final String IS_USER_RESOLVED = "isUserResolved";
     public static final String ERROR_STATUS_AUTH_CONTEXT_NULL = "authentication.context.null";
     public static final String ERROR_DESCRIPTION_AUTH_CONTEXT_NULL = "authentication.context.null.description";
+    public static final String ERROR_STATUS_AUTH_FLOW_TIMEOUT = "authentication.flow.timeout";
+    public static final String ERROR_DESCRIPTION_AUTH_FLOW_TIMEOUT = "authentication.flow.timeout.description";
     public static final String IS_SENT_TO_RETRY = "isSentToRetry";
     public static final String CONTEXT_IDENTIFIER = "contextIdentifier";
+    public static final String REQ_ATTR_RETRY_STATUS = "retryStatus";
+    public static final String IDP_MAPPED_USER_ROLES = "identityProviderMappedUserRoles";
+    public static final String ALLOW_ASSOCIATING_TO_EXISTING_USER = "JITProvisioning.AllowAssociatingToExistingUser";
 
     private FrameworkConstants() {
 
@@ -344,6 +359,8 @@ public abstract class FrameworkConstants {
          */
         public static final String USER_SESSION_MAPPING_ENABLED =
                 "JDBCPersistenceManager.SessionDataPersist.UserSessionMapping.Enable";
+        public static final String SKIP_LOCAL_USER_SEARCH_FOR_AUTHENTICATION_FLOW_HANDLERS =
+                "SkipLocalUserSearchForAuthenticationFlowHandlers";
 
         /**
          * Configuration used for session data storage optimization.
@@ -414,6 +431,7 @@ public abstract class FrameworkConstants {
         public static final String USER_TENANT_DOMAIN_HINT = "ut";
         public static final String CORRELATION_ID = "crId";
         public static final String IS_IDF_INITIATED_FROM_AUTHENTICATOR = "isIdfInitiatedFromAuthenticator";
+        public static final String SESSION_ID = "sessionId";
 
         private RequestParams() {
         }
@@ -586,6 +604,7 @@ public abstract class FrameworkConstants {
         public static final String FORCE_AUTH_PARAM = "forceAuth";
         public static final String SUBJECT_IDENTIFIER_PARAM = "markAsSubjectIdentifierStep";
         public static final String SUBJECT_ATTRIBUTE_PARAM = "markAsSubjectAttributeStep";
+        public static final String SKIP_PROMPT = "skipPrompt";
     }
 
     /**
@@ -769,5 +788,16 @@ public abstract class FrameworkConstants {
         USER_PROMPT,
         INTERNAL_PROMPT,
         REDIRECTION_PROMPT
+    }
+
+    /**
+     * Enum for authenticator message type.
+     * INFO - Info messages.
+     * ERROR - Error messages.
+     */
+    public enum AuthenticatorMessageType {
+
+        INFO,
+        ERROR
     }
 }

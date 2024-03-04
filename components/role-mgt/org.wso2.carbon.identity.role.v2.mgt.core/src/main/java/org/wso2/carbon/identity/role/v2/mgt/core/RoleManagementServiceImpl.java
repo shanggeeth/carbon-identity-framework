@@ -27,10 +27,12 @@ import org.wso2.carbon.context.CarbonContext;
 import org.wso2.carbon.identity.api.resource.mgt.APIResourceMgtException;
 import org.wso2.carbon.identity.application.common.model.Scope;
 import org.wso2.carbon.identity.base.IdentityException;
+import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.core.model.ExpressionNode;
 import org.wso2.carbon.identity.core.model.FilterTreeBuilder;
 import org.wso2.carbon.identity.core.model.Node;
 import org.wso2.carbon.identity.core.model.OperationNode;
+import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
 import org.wso2.carbon.identity.role.v2.mgt.core.dao.RoleDAO;
@@ -45,9 +47,9 @@ import org.wso2.carbon.identity.role.v2.mgt.core.model.IdpGroup;
 import org.wso2.carbon.identity.role.v2.mgt.core.model.Permission;
 import org.wso2.carbon.identity.role.v2.mgt.core.model.Role;
 import org.wso2.carbon.identity.role.v2.mgt.core.model.RoleBasicInfo;
+import org.wso2.carbon.identity.role.v2.mgt.core.model.RoleDTO;
 import org.wso2.carbon.identity.role.v2.mgt.core.model.UserBasicInfo;
 import org.wso2.carbon.user.core.UserCoreConstants;
-import org.wso2.carbon.user.core.util.UserCoreUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -123,7 +125,7 @@ public class RoleManagementServiceImpl implements RoleManagementService {
         roleManagementEventPublisherProxy.publishPostAddRole(roleBasicInfo.getId(), roleName, userList, groupList,
                 permissions, audience, audienceId, tenantDomain);
         if (log.isDebugEnabled()) {
-            log.debug(String.format("%s add role of name : %s successfully.", getUser(tenantDomain), roleName));
+            log.debug(String.format("%s added role of name : %s successfully.", getUser(tenantDomain), roleName));
         }
         RoleBasicInfo role = roleDAO.getRoleBasicInfoById(roleBasicInfo.getId(), tenantDomain);
         for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
@@ -141,6 +143,11 @@ public class RoleManagementServiceImpl implements RoleManagementService {
 
         List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
                 .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoles(limit, offset, sortBy, sortOrder, tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreGetRolesWithException(limit, offset, sortBy, sortOrder,
@@ -160,12 +167,47 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     }
 
     @Override
+    public List<Role> getRoles(Integer limit, Integer offset, String sortBy, String sortOrder, String tenantDomain,
+                               List<String> requiredAttributes) throws IdentityRoleManagementException {
+
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoles(limit, offset, sortBy, sortOrder, tenantDomain, requiredAttributes);
+            }
+        }
+        RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
+                .getInstance();
+        roleManagementEventPublisherProxy.publishPreGetRolesWithException(limit, offset, sortBy, sortOrder,
+                tenantDomain, requiredAttributes);
+        List<Role> rolesList = roleDAO.getRoles(limit, offset, sortBy, sortOrder, tenantDomain, requiredAttributes);
+        roleManagementEventPublisherProxy.publishPostGetRoles(limit, offset, sortBy, sortOrder, tenantDomain,
+                requiredAttributes);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetRoles(rolesList, limit, offset, sortBy, sortOrder, tenantDomain,
+                        requiredAttributes);
+            }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("%s get roles successfully.", getUser(tenantDomain)));
+        }
+        return rolesList;
+    }
+
+    @Override
     public List<RoleBasicInfo> getRoles(String filter, Integer limit, Integer offset, String sortBy, String sortOrder,
-                                                                               String tenantDomain)
+                                        String tenantDomain)
             throws IdentityRoleManagementException {
 
         List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
                 .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoles(filter, limit, offset, sortBy, sortOrder, tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreGetRolesWithException(filter, limit, offset, sortBy, sortOrder,
@@ -187,10 +229,49 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     }
 
     @Override
+    public List<Role> getRoles(String filter, Integer limit, Integer offset, String sortBy, String sortOrder,
+                               String tenantDomain, List<String> requiredAttributes)
+            throws IdentityRoleManagementException {
+
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoles(filter, limit, offset, sortBy, sortOrder, tenantDomain,
+                        requiredAttributes);
+            }
+        }
+        RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
+                .getInstance();
+        roleManagementEventPublisherProxy.publishPreGetRolesWithException(filter, limit, offset, sortBy, sortOrder,
+                tenantDomain, requiredAttributes);
+        List<ExpressionNode> expressionNodes = getExpressionNodes(filter);
+        List<Role> rolesList = roleDAO.getRoles(expressionNodes, limit, offset, sortBy,
+                sortOrder, tenantDomain, requiredAttributes);
+        roleManagementEventPublisherProxy.publishPostGetRoles(filter, limit, offset, sortBy, sortOrder, tenantDomain,
+                requiredAttributes);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetRoles(rolesList, filter, limit, offset, sortBy, sortOrder, tenantDomain,
+                        requiredAttributes);
+            }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("%s get filtered roles successfully.", getUser(tenantDomain)));
+        }
+        return rolesList;
+    }
+
+    @Override
     public Role getRole(String roleId, String tenantDomain) throws IdentityRoleManagementException {
 
         List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
                 .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRole(roleId, tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreGetRoleWithException(roleId, tenantDomain);
@@ -208,16 +289,31 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     }
 
     @Override
+    public Role getRole(String roleId) throws IdentityRoleManagementException {
+
+        return roleDAO.getRole(roleId);
+    }
+
+    @Override
     public RoleBasicInfo getRoleBasicInfoById(String roleId, String tenantDomain)
             throws IdentityRoleManagementException {
 
         List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
                 .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoleBasicInfo(roleId, tenantDomain);
+            }
+        }
         RoleBasicInfo role = roleDAO.getRoleBasicInfoById(roleId, tenantDomain);
         for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
             if (roleManagementListener.isEnable()) {
                 roleManagementListener.postGetRoleBasicInfo(role, roleId, tenantDomain);
             }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("%s executed get role basic info by id : %s successfully.", getUser(tenantDomain),
+                    roleId));
         }
         return role;
     }
@@ -226,6 +322,13 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     public RoleBasicInfo updateRoleName(String roleId, String newRoleName, String tenantDomain)
             throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preUpdateRoleName(roleId, newRoleName, tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreUpdateRoleNameWithException(roleId, newRoleName, tenantDomain);
@@ -236,6 +339,11 @@ public class RoleManagementServiceImpl implements RoleManagementService {
         }
         roleDAO.updateRoleName(roleId, newRoleName, tenantDomain);
         roleManagementEventPublisherProxy.publishPostUpdateRoleName(roleId, newRoleName, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postUpdateRoleName(roleId, newRoleName, tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s updated role name of role id : %s successfully.",
                     getUser(tenantDomain), roleId));
@@ -246,12 +354,24 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     @Override
     public void deleteRole(String roleId, String tenantDomain) throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preDeleteRole(roleId, tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreDeleteRoleWithException(roleId, tenantDomain);
         doPreValidateRoleDeletion(roleId, tenantDomain);
         roleDAO.deleteRole(roleId, tenantDomain);
         roleManagementEventPublisherProxy.publishPostDeleteRole(roleId, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postDeleteRole(roleId, tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s deleted role of id : %s successfully.",
                     getUser(tenantDomain), roleId));
@@ -276,11 +396,23 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     public List<UserBasicInfo> getUserListOfRole(String roleId, String tenantDomain)
             throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetUserListOfRole(roleId, tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreGetUserListOfRoleWithException(roleId, tenantDomain);
         List<UserBasicInfo> userBasicInfoList = roleDAO.getUserListOfRole(roleId, tenantDomain);
         roleManagementEventPublisherProxy.publishPostGetUserListOfRole(roleId, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetUserListOfRole(userBasicInfoList, roleId, tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s get list of users of role of id : %s successfully.",
                     getUser(tenantDomain), roleId));
@@ -292,6 +424,13 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     public RoleBasicInfo updateUserListOfRole(String roleId, List<String> newUserIDList, List<String> deletedUserIDList,
                                               String tenantDomain) throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preUpdateUserListOfRole(roleId, newUserIDList, deletedUserIDList, tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreUpdateUserListOfRoleWithException(roleId, newUserIDList,
@@ -300,6 +439,11 @@ public class RoleManagementServiceImpl implements RoleManagementService {
         roleDAO.updateUserListOfRole(roleId, newUserIDList, deletedUserIDList, tenantDomain);
         roleManagementEventPublisherProxy.publishPostUpdateUserListOfRole(roleId, newUserIDList, deletedUserIDList,
                 tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postUpdateUserListOfRole(roleId, newUserIDList, deletedUserIDList, tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s updated list of users of role of id : %s successfully.",
                     getUser(tenantDomain), roleId));
@@ -311,11 +455,23 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     public List<GroupBasicInfo> getGroupListOfRole(String roleId, String tenantDomain)
             throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetGroupListOfRole(roleId, tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreGetGroupListOfRoleWithException(roleId, tenantDomain);
         List<GroupBasicInfo> groupBasicInfoList = roleDAO.getGroupListOfRole(roleId, tenantDomain);
         roleManagementEventPublisherProxy.publishPostGetGroupListOfRole(roleId, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetGroupListOfRole(groupBasicInfoList, roleId, tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s get list of groups of role of id : %s successfully.",
                     getUser(tenantDomain), roleId));
@@ -328,6 +484,14 @@ public class RoleManagementServiceImpl implements RoleManagementService {
                                                List<String> deletedGroupIDList, String tenantDomain)
             throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preUpdateGroupListOfRole(roleId, newGroupIDList, deletedGroupIDList,
+                        tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreUpdateGroupListOfRoleWithException(roleId, newGroupIDList,
@@ -335,6 +499,12 @@ public class RoleManagementServiceImpl implements RoleManagementService {
         roleDAO.updateGroupListOfRole(roleId, newGroupIDList, deletedGroupIDList, tenantDomain);
         roleManagementEventPublisherProxy.publishPostUpdateGroupListOfRole(roleId, newGroupIDList, deletedGroupIDList,
                 tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postUpdateGroupListOfRole(roleId, newGroupIDList, deletedGroupIDList,
+                        tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s updated list of groups of role of id : %s successfully.",
                     getUser(tenantDomain), roleId));
@@ -346,11 +516,23 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     public List<IdpGroup> getIdpGroupListOfRole(String roleId, String tenantDomain)
             throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetIdpGroupListOfRole(roleId, tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreGetIdpGroupListOfRoleWithException(roleId, tenantDomain);
         List<IdpGroup> idpGroups = roleDAO.getIdpGroupListOfRole(roleId, tenantDomain);
         roleManagementEventPublisherProxy.publishPostIdpGetGroupListOfRole(roleId, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetIdpGroupListOfRole(idpGroups, roleId, tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s get list of idp groups of role of id : %s successfully.",
                     getUser(tenantDomain), roleId));
@@ -363,6 +545,14 @@ public class RoleManagementServiceImpl implements RoleManagementService {
                                                   List<IdpGroup> deletedGroupList, String tenantDomain)
             throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preUpdateIdpGroupListOfRole(roleId, newGroupList, deletedGroupList,
+                        tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreUpdateIdpGroupListOfRoleWithException(roleId, newGroupList,
@@ -371,6 +561,12 @@ public class RoleManagementServiceImpl implements RoleManagementService {
         roleDAO.updateIdpGroupListOfRole(roleId, newGroupList, deletedGroupList, tenantDomain);
         roleManagementEventPublisherProxy.publishPostUpdateIdpGroupListOfRole(roleId, newGroupList, deletedGroupList,
                 tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postUpdateIdpGroupListOfRole(roleId, newGroupList, deletedGroupList,
+                        tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s updated list of idp groups of role of id : %s successfully.",
                     getUser(tenantDomain), roleId));
@@ -382,11 +578,23 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     public List<Permission> getPermissionListOfRole(String roleId, String tenantDomain)
             throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetPermissionListOfRole(roleId, tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
                 .getInstance();
         roleManagementEventPublisherProxy.publishPreGetPermissionListOfRoleWithException(roleId, tenantDomain);
         List<Permission> permissionListOfRole = roleDAO.getPermissionListOfRole(roleId, tenantDomain);
         roleManagementEventPublisherProxy.publishPostGetPermissionListOfRole(roleId, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetPermissionListOfRole(permissionListOfRole, roleId, tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s get list of permissions of role of id : %s successfully.",
                     getUser(tenantDomain), roleId));
@@ -398,12 +606,25 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     public List<String> getPermissionListOfRoles(List<String> roleIds, String tenantDomain)
             throws IdentityRoleManagementException {
 
-        return roleDAO.getPermissionListOfRoles(roleIds, tenantDomain);
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetPermissionListOfRoles(roleIds, tenantDomain);
+            }
+        }
+        List<String> permissionListOfRoles = roleDAO.getPermissionListOfRoles(roleIds, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetPermissionListOfRoles(permissionListOfRoles, roleIds, tenantDomain);
+            }
+        }
+        return permissionListOfRoles;
     }
 
     @Override
     public RoleBasicInfo updatePermissionListOfRole(String roleId, List<Permission> addedPermissions,
-                                                       List<Permission> deletedPermissions, String tenantDomain)
+                                                    List<Permission> deletedPermissions, String tenantDomain)
             throws IdentityRoleManagementException {
 
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy = RoleManagementEventPublisherProxy
@@ -411,12 +632,26 @@ public class RoleManagementServiceImpl implements RoleManagementService {
         roleManagementEventPublisherProxy.publishPreUpdatePermissionsForRoleWithException(roleId, addedPermissions,
                 deletedPermissions, tenantDomain);
         removeSimilarPermissions(addedPermissions, deletedPermissions);
-        RoleBasicInfo roleBasicInfo =  roleDAO.getRoleBasicInfoById(roleId, tenantDomain);
+        RoleBasicInfo roleBasicInfo = roleDAO.getRoleBasicInfoById(roleId, tenantDomain);
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preUpdatePermissionsForRole(roleId, addedPermissions, deletedPermissions,
+                        roleBasicInfo.getAudience(), roleBasicInfo.getAudienceId(), tenantDomain);
+            }
+        }
         validatePermissions(addedPermissions, roleBasicInfo.getAudience(), roleBasicInfo.getAudienceId(), tenantDomain);
         roleDAO.updatePermissionListOfRole(roleId, addedPermissions,
                 deletedPermissions, tenantDomain);
         roleManagementEventPublisherProxy.publishPostUpdatePermissionsForRole(roleId, addedPermissions,
                 deletedPermissions, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postUpdatePermissionsForRole(roleId, addedPermissions, deletedPermissions,
+                        roleBasicInfo.getAudience(), roleBasicInfo.getAudienceId(), tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s set list of permissions of role of id : %s successfully.",
                     getUser(tenantDomain), roleId));
@@ -446,11 +681,23 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     @Override
     public int getRolesCount(String tenantDomain) throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRolesCount(tenantDomain);
+            }
+        }
         RoleManagementEventPublisherProxy roleManagementEventPublisherProxy =
                 RoleManagementEventPublisherProxy.getInstance();
         roleManagementEventPublisherProxy.publishPreGetRolesCountWithException(tenantDomain);
         int count = roleDAO.getRolesCount(tenantDomain);
         roleManagementEventPublisherProxy.publishPostGetRolesCount(tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetRolesCount(count, tenantDomain);
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug(String.format("%s get roles count successfully.", getUser(tenantDomain)));
         }
@@ -504,6 +751,11 @@ public class RoleManagementServiceImpl implements RoleManagementService {
 
         List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
                 .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoleListOfUser(userId, tenantDomain);
+            }
+        }
         List<RoleBasicInfo> roles = roleDAO.getRoleListOfUser(userId, tenantDomain);
         for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
             if (roleManagementListener.isEnable()) {
@@ -519,6 +771,11 @@ public class RoleManagementServiceImpl implements RoleManagementService {
 
         List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
                 .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoleListOfGroups(groupIds, tenantDomain);
+            }
+        }
         List<RoleBasicInfo> roles = roleDAO.getRoleListOfGroups(groupIds, tenantDomain);
         for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
             if (roleManagementListener.isEnable()) {
@@ -534,6 +791,11 @@ public class RoleManagementServiceImpl implements RoleManagementService {
 
         List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
                 .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoleListOfIdpGroups(groupIds, tenantDomain);
+            }
+        }
         List<RoleBasicInfo> roles = roleDAO.getRoleListOfIdpGroups(groupIds, tenantDomain);
         for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
             if (roleManagementListener.isEnable()) {
@@ -546,33 +808,84 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     @Override
     public List<String> getRoleIdListOfUser(String userId, String tenantDomain) throws IdentityRoleManagementException {
 
-        return roleDAO.getRoleIdListOfUser(userId, tenantDomain);
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoleIdListOfUser(userId, tenantDomain);
+            }
+        }
+        List<String> roles = roleDAO.getRoleIdListOfUser(userId, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetRoleIdListOfUser(roles, userId, tenantDomain);
+            }
+        }
+        return roles;
     }
 
     @Override
     public List<String> getRoleIdListOfGroups(List<String> groupIds, String tenantDomain)
             throws IdentityRoleManagementException {
 
-        return roleDAO.getRoleIdListOfGroups(groupIds, tenantDomain);
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoleIdListOfGroups(groupIds, tenantDomain);
+            }
+        }
+        List<String> roles = roleDAO.getRoleIdListOfGroups(groupIds, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetRoleIdListOfGroups(groupIds, tenantDomain);
+            }
+        }
+        return roles;
     }
 
     @Override
     public List<String> getRoleIdListOfIdpGroups(List<String> groupIds, String tenantDomain)
             throws IdentityRoleManagementException {
 
-        return roleDAO.getRoleIdListOfIdpGroups(groupIds, tenantDomain);
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preGetRoleIdListOfIdpGroups(groupIds, tenantDomain);
+            }
+        }
+        List<String> roles = roleDAO.getRoleIdListOfIdpGroups(groupIds, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postGetRoleIdListOfIdpGroups(roles, groupIds, tenantDomain);
+            }
+        }
+        return roles;
     }
 
     @Override
     public void deleteRolesByApplication(String applicationId, String tenantDomain)
             throws IdentityRoleManagementException {
 
+        List<RoleManagementListener> roleManagementListenerList = RoleManagementServiceComponentHolder.getInstance()
+                .getRoleManagementListenerList();
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.preDeleteRolesByApplication(applicationId, tenantDomain);
+            }
+        }
         roleDAO.deleteRolesByApplication(applicationId, tenantDomain);
+        for (RoleManagementListener roleManagementListener : roleManagementListenerList) {
+            if (roleManagementListener.isEnable()) {
+                roleManagementListener.postDeleteRolesByApplication(applicationId, tenantDomain);
+            }
+        }
     }
 
     @Override
     public Map<String, String> getMainRoleToSharedRoleMappingsBySubOrg(List<String> roleIds,
-                                                                             String subOrgTenantDomain)
+                                                                       String subOrgTenantDomain)
             throws IdentityRoleManagementException {
 
         return roleDAO.getMainRoleToSharedRoleMappingsBySubOrg(roleIds, subOrgTenantDomain);
@@ -585,6 +898,12 @@ public class RoleManagementServiceImpl implements RoleManagementService {
         return roleDAO.getAssociatedApplicationIdsByRoleId(roleId, tenantDomain);
     }
 
+    @Override
+    public List<RoleDTO> getSharedHybridRoles(String roleId, int mainTenantId) throws IdentityRoleManagementException {
+
+        return roleDAO.getSharedHybridRoles(roleId, mainTenantId);
+    }
+
     /**
      * Get user from tenant domain.
      *
@@ -594,12 +913,21 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     private String getUser(String tenantDomain) {
 
         String user = CarbonContext.getThreadLocalCarbonContext().getUsername();
-        if (StringUtils.isNotBlank(user)) {
-            user = UserCoreUtil.addTenantDomainToEntry(user, tenantDomain);
-        } else {
-            user = CarbonConstants.REGISTRY_SYSTEM_USERNAME;
+        if (LoggerUtils.isLogMaskingEnable) {
+            if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(tenantDomain)) {
+                String initiator = IdentityUtil.getInitiatorId(user, tenantDomain);
+                if (StringUtils.isNotBlank(initiator)) {
+                    return initiator;
+                }
+            }
+            if (StringUtils.isNotBlank(user)) {
+                return LoggerUtils.getMaskedContent(user + "@" + tenantDomain);
+            }
+            return LoggerUtils.getMaskedContent(CarbonConstants.REGISTRY_SYSTEM_USERNAME);
+        } else if (StringUtils.isNotBlank(user)) {
+            return user + "@" + tenantDomain;
         }
-        return user;
+        return CarbonConstants.REGISTRY_SYSTEM_USERNAME;
     }
 
     /**
@@ -624,7 +952,7 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     /**
      * Validate organization role audience.
      *
-     * @param audienceId Audience ID.
+     * @param audienceId               Audience ID.
      * @param roleCreationTenantDomain Role creation tenant domain.
      * @throws IdentityRoleManagementException Error occurred while validating organization role audience.
      */
@@ -652,9 +980,9 @@ public class RoleManagementServiceImpl implements RoleManagementService {
     /**
      * Validate permissions.
      *
-     * @param permissions Permissions.
-     * @param audience  Audience.
-     * @param audienceId  Audience ID.
+     * @param permissions  Permissions.
+     * @param audience     Audience.
+     * @param audienceId   Audience ID.
      * @param tenantDomain Tenant domain.
      * @throws IdentityRoleManagementException Error occurred while validating permissions.
      */
@@ -698,6 +1026,7 @@ public class RoleManagementServiceImpl implements RoleManagementService {
 
     /**
      * Check if the role name has a domain separator character.
+     *
      * @param roleName Role name.
      * @return True if the role name has a domain separator character.
      */
@@ -713,6 +1042,10 @@ public class RoleManagementServiceImpl implements RoleManagementService {
      * @param arr2 Array of permissions.
      */
     private void removeSimilarPermissions(List<Permission> arr1, List<Permission> arr2) {
+
+        if (arr1 == null || arr2 == null) {
+            return;
+        }
 
         List<Permission> common = new ArrayList<>(arr1);
         common.retainAll(arr2);

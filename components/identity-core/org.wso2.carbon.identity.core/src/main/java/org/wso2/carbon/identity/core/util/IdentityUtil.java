@@ -50,13 +50,16 @@ import org.wso2.carbon.identity.core.model.IdentityEventListenerConfig;
 import org.wso2.carbon.identity.core.model.IdentityEventListenerConfigKey;
 import org.wso2.carbon.identity.core.model.LegacyFeatureConfig;
 import org.wso2.carbon.identity.core.model.ReverseProxyConfig;
+import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
 import org.wso2.carbon.registry.core.utils.UUIDGenerator;
 import org.wso2.carbon.user.api.RealmConfiguration;
+import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserRealm;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.UserCoreConstants;
 import org.wso2.carbon.user.core.UserStoreManager;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
+import org.wso2.carbon.user.core.common.User;
 import org.wso2.carbon.user.core.util.UserCoreUtil;
 import org.wso2.carbon.utils.CarbonUtils;
 import org.wso2.carbon.utils.NetworkUtils;
@@ -86,6 +89,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -99,6 +103,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import static org.wso2.carbon.identity.core.util.IdentityCoreConstants.ALPHABET;
 import static org.wso2.carbon.identity.core.util.IdentityCoreConstants.ENCODED_ZERO;
@@ -146,6 +151,7 @@ public class IdentityUtil {
     private static final String APPLICATION_DOMAIN = "Application";
     private static final String WORKFLOW_DOMAIN = "Workflow";
     private static Boolean groupsVsRolesSeparationImprovementsEnabled;
+    private static String JAVAX_TRANSFORMER_PROP_VAL = "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl";
 
     // System Property for trust managers.
     public static final String PROP_TRUST_STORE_UPDATE_REQUIRED =
@@ -332,7 +338,7 @@ public class IdentityUtil {
         byte[] rawPpid = Base64.getDecoder().decode(value);
 
         String algorithm;
-        if (Boolean.parseBoolean(IdentityUtil.getProperty(IdentityConstants.OpenId.ENABLE_SHA256_PPID_DISPLAY_VALUE))) {
+        if (Boolean.parseBoolean(IdentityUtil.getProperty(IdentityConstants.IDENTITY_UTIL_ENABLE_SHA256))) {
             algorithm = SHA256_ALGORITHM;
         } else {
             algorithm = SHA1_ALGORITHM;
@@ -367,8 +373,14 @@ public class IdentityUtil {
 
     public static String getHMAC(String secretKey, String baseString) throws SignatureException {
         try {
-            SecretKeySpec key = new SecretKeySpec(secretKey.getBytes(), HMAC_SHA256_ALGORITHM);
-            Mac mac = Mac.getInstance(HMAC_SHA256_ALGORITHM);
+            String algorithm;
+            if (Boolean.parseBoolean(IdentityUtil.getProperty(IdentityConstants.IDENTITY_UTIL_ENABLE_SHA256))) {
+                algorithm = HMAC_SHA256_ALGORITHM;
+            } else {
+                algorithm = HMAC_SHA1_ALGORITHM;
+            }
+            SecretKeySpec key = new SecretKeySpec(secretKey.getBytes(), algorithm);
+            Mac mac = Mac.getInstance(algorithm);
             mac.init(key);
             byte[] rawHmac = mac.doFinal(baseString.getBytes());
             return Base64.getEncoder().encodeToString(rawHmac);
@@ -414,7 +426,7 @@ public class IdentityUtil {
             String baseString = UUIDGenerator.generateUUID();
 
             String algorithm;
-            if (Boolean.parseBoolean(IdentityUtil.getProperty(IdentityConstants.IDENTITY_UTIL_ENABLE_SHA256_RANDOM_NUMBERS))) {
+            if (Boolean.parseBoolean(IdentityUtil.getProperty(IdentityConstants.IDENTITY_UTIL_ENABLE_SHA256))) {
                 algorithm = HMAC_SHA256_ALGORITHM;
             } else {
                 algorithm = HMAC_SHA1_ALGORITHM;
@@ -637,7 +649,17 @@ public class IdentityUtil {
      */
     public static TransformerFactory getSecuredTransformerFactory() {
 
-        TransformerFactory trfactory = TransformerFactory.newInstance();
+        TransformerFactory trfactory;
+        try {
+            // Prevent XXE Attack by ensure using the correct factory class to create TrasformerFactory instance.
+            // This will instruct Java to use to version which supports using ACCESS_EXTERNAL_DTD argument.
+            trfactory = TransformerFactory.newInstance(JAVAX_TRANSFORMER_PROP_VAL, null);
+        } catch (TransformerFactoryConfigurationError e) {
+            log.error("Failed to load default TransformerFactory", e);
+            // This part uses the default implementation of xalan.
+            trfactory = TransformerFactory.newInstance();
+        }
+
         try {
             trfactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
         } catch (TransformerConfigurationException e) {
@@ -1648,7 +1670,24 @@ public class IdentityUtil {
                         if (log.isDebugEnabled()) {
                             log.debug("User id could not be resolved for username: " + username + " in user store " +
                                     "domain: " + userStoreDomain + " and tenant with id: " + tenantId + ". Probably " +
-                                    "user does not exist in the user store.");
+                                    "user does not exist in the user store. Hence trying to resolve user from the " +
+                                    "resident organization.");
+                        }
+                        Tenant tenant = IdentityCoreServiceDataHolder.getInstance().getRealmService()
+                                .getTenantManager().getTenant(tenantId);
+                        if (tenant == null) {
+                            return userId;
+                        }
+                        String associatedOrganizationUUID = tenant.getAssociatedOrganizationUUID();
+                        if (StringUtils.isNotBlank(associatedOrganizationUUID)) {
+                            // Trying to resolve the user from the Resident Organization if the user is not found in
+                            // the user store of the current organization.
+                            Optional<User> user = IdentityCoreServiceDataHolder.getInstance()
+                                    .getOrganizationUserResidentResolverService().resolveUserFromResidentOrganization(
+                                            username, null, associatedOrganizationUUID);
+                            if (user.isPresent()) {
+                                return user.get().getUserID();
+                            }
                         }
                     }
                     return userId;
@@ -1658,7 +1697,7 @@ public class IdentityUtil {
                             "AbstractUserStore manager");
                 }
                 throw new IdentityException("Unable to get the unique id of the user: " + username + ".");
-            } catch (org.wso2.carbon.user.core.UserStoreException e) {
+            } catch (org.wso2.carbon.user.core.UserStoreException | OrganizationManagementException e) {
                 if (log.isDebugEnabled()) {
                     log.debug("Error occurred while resolving Id for the user: " + username, e);
                 }

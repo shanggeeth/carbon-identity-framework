@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2013-2023, WSO2 LLC. (http://www.wso2.com).
  *
- * WSO2 Inc. licenses this file to you under the Apache License,
+ * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,12 +21,14 @@ package org.wso2.carbon.identity.application.authentication.framework.config;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.identity.application.authentication.framework.config.builder.FileBasedConfigurationBuilder;
 import org.wso2.carbon.identity.application.authentication.framework.config.loader.UIBasedConfigurationLoader;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.AuthenticatorConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.ExternalIdPConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.SequenceConfig;
 import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
+import org.wso2.carbon.identity.application.authentication.framework.internal.FrameworkServiceDataHolder;
 import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
 import org.wso2.carbon.identity.application.common.model.AuthenticationStep;
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
@@ -37,6 +39,8 @@ import org.wso2.carbon.identity.core.ServiceURLBuilder;
 import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
+import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
+import org.wso2.carbon.identity.organization.management.service.util.OrganizationManagementUtil;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 import org.wso2.carbon.idp.mgt.IdentityProviderManager;
 
@@ -323,7 +327,9 @@ public class ConfigurationFacade {
 
         if (IdentityTenantUtil.isTenantQualifiedUrlsEnabled()) {
             try {
-                return ServiceURLBuilder.create().addPath(defaultContext).build().getAbsolutePublicURL();
+                String organizationId = PrivilegedCarbonContext.getThreadLocalCarbonContext().getOrganizationId();
+                return ServiceURLBuilder.create().addPath(defaultContext).setOrganization(organizationId).build()
+                        .getAbsolutePublicURL();
             } catch (URLBuilderException e) {
                 throw new IdentityRuntimeException(
                         "Error while building tenant qualified url for context: " + defaultContext, e);
@@ -352,11 +358,22 @@ public class ConfigurationFacade {
                 path = urlFromFileBasedConfig;
             }
         }
+        String tenantDomain = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantDomain();
+        String organizationId = PrivilegedCarbonContext.getThreadLocalCarbonContext().getOrganizationId();
+        ServiceURLBuilder serviceURLBuilder = ServiceURLBuilder.create().addPath(path);
         try {
-            return ServiceURLBuilder.create().addPath(path).build().getAbsolutePublicURL();
+            // If the organization ID is not set in the context for a tenant which is associated to an organization.
+            if (StringUtils.isEmpty(organizationId) && OrganizationManagementUtil.isOrganization(tenantDomain)) {
+                organizationId = FrameworkServiceDataHolder.getInstance().getOrganizationManager()
+                        .resolveOrganizationId(tenantDomain);
+            }
+            return serviceURLBuilder.setOrganization(organizationId).build().getAbsolutePublicURL();
         } catch (URLBuilderException e) {
             throw new IdentityRuntimeException(
                     "Error while building tenant qualified url for context: " + defaultContext, e);
+        } catch (OrganizationManagementException e) {
+            throw new IdentityRuntimeException(
+                    "Error while resolving organization by tenant domain: " + tenantDomain, e);
         }
     }
 }

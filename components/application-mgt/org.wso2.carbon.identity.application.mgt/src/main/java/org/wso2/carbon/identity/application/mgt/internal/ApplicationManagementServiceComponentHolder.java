@@ -20,6 +20,7 @@ package org.wso2.carbon.identity.application.mgt.internal;
 import org.wso2.carbon.consent.mgt.core.ConsentManager;
 import org.wso2.carbon.identity.api.resource.mgt.APIResourceManager;
 import org.wso2.carbon.identity.application.mgt.AbstractInboundAuthenticatorConfig;
+import org.wso2.carbon.identity.application.mgt.inbound.protocol.ApplicationInboundAuthConfigHandler;
 import org.wso2.carbon.identity.application.mgt.provider.ApplicationPermissionProvider;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.core.SAMLSSOServiceProviderManager;
@@ -28,10 +29,14 @@ import org.wso2.carbon.identity.organization.management.service.OrganizationMana
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationUserResidentResolverService;
 import org.wso2.carbon.identity.role.v2.mgt.core.RoleManagementService;
+import org.wso2.carbon.identity.secret.mgt.core.SecretManager;
+import org.wso2.carbon.identity.secret.mgt.core.SecretResolveManager;
 import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.utils.ConfigurationContextService;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -66,8 +71,13 @@ public class ApplicationManagementServiceComponentHolder {
     private OrganizationManager organizationManager;
 
     private boolean isOrganizationManagementEnable = false;
+    private static final List<ApplicationInboundAuthConfigHandler> applicationInboundAuthConfigHandlers = new
+            ArrayList<>();
 
     private IdentityEventService identityEventService;
+
+    private SecretManager secretManager;
+    private SecretResolveManager secretResolveManager;
 
     private ApplicationManagementServiceComponentHolder() {
 
@@ -337,5 +347,75 @@ public class ApplicationManagementServiceComponentHolder {
     public OrganizationManager getOrganizationManager() {
 
         return organizationManager;
+    }
+
+    /**
+     * Gets the SecretManager instance.
+     * @return The SecretManager instance.
+     */
+    public SecretManager getSecretManager() {
+
+        return secretManager;
+    }
+
+    /**
+     * Sets the SecretManager instance.
+     * @param secretManager The SecretManager instance to be set.
+     */
+    public void setSecretManager(SecretManager secretManager) {
+
+        this.secretManager = secretManager;
+    }
+
+    /**
+     * Gets the SecretResolveManager instance.
+     *
+     * @return The SecretResolveManager instance.
+     */
+    public SecretResolveManager getSecretResolveManager() {
+
+        return secretResolveManager;
+    }
+
+    /**
+     * Sets the SecretResolveManager instance.
+     *
+     * @param secretResolveManager The SecretResolveManager instance to be set.
+     */
+    public void setSecretResolveManager(SecretResolveManager secretResolveManager) {
+
+        this.secretResolveManager = secretResolveManager;
+    }
+    
+    /**
+     * Add application inbound config service.
+     *
+     * @param applicationInboundAuthConfigHandler Protocol service.
+     */
+    public void addApplicationInboundAuthConfigHandler(ApplicationInboundAuthConfigHandler
+                                                               applicationInboundAuthConfigHandler) {
+        
+        applicationInboundAuthConfigHandlers.add(applicationInboundAuthConfigHandler);
+    }
+    
+    /**
+     * Remove application inbound config service.
+     *
+     * @param applicationInboundAuthConfigHandler Protocol service.
+     */
+    public void removeApplicationInboundConfigHandler(ApplicationInboundAuthConfigHandler
+                                                              applicationInboundAuthConfigHandler) {
+        
+        applicationInboundAuthConfigHandlers.remove(applicationInboundAuthConfigHandler);
+    }
+    
+    /**
+     * Get application inbound config service.
+     *
+     * @return List of application inbound config services.
+     */
+    public List<ApplicationInboundAuthConfigHandler> getApplicationInboundAuthConfigHandler() {
+        
+        return applicationInboundAuthConfigHandlers;
     }
 }

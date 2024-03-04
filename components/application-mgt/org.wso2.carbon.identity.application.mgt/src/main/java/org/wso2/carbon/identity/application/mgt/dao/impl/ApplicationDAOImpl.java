@@ -40,6 +40,7 @@ import org.wso2.carbon.identity.application.common.model.AuthenticationStep;
 import org.wso2.carbon.identity.application.common.model.Claim;
 import org.wso2.carbon.identity.application.common.model.ClaimConfig;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
+import org.wso2.carbon.identity.application.common.model.ClientAttestationMetaData;
 import org.wso2.carbon.identity.application.common.model.ConsentConfig;
 import org.wso2.carbon.identity.application.common.model.ConsentPurpose;
 import org.wso2.carbon.identity.application.common.model.ConsentPurposeConfigs;
@@ -77,6 +78,7 @@ import org.wso2.carbon.identity.application.mgt.internal.ApplicationManagementSe
 import org.wso2.carbon.identity.base.IdentityException;
 import org.wso2.carbon.identity.base.IdentityRuntimeException;
 import org.wso2.carbon.identity.core.CertificateRetrievingException;
+import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.core.model.ExpressionNode;
 import org.wso2.carbon.identity.core.model.FilterData;
 import org.wso2.carbon.identity.core.model.FilterTreeBuilder;
@@ -88,6 +90,10 @@ import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants;
 import org.wso2.carbon.identity.role.v2.mgt.core.RoleManagementService;
 import org.wso2.carbon.identity.role.v2.mgt.core.exception.IdentityRoleManagementException;
+import org.wso2.carbon.identity.secret.mgt.core.SecretManager;
+import org.wso2.carbon.identity.secret.mgt.core.exception.SecretManagementException;
+import org.wso2.carbon.identity.secret.mgt.core.model.ResolvedSecret;
+import org.wso2.carbon.identity.secret.mgt.core.model.Secret;
 import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.util.UserCoreUtil;
@@ -125,6 +131,13 @@ import static java.util.Objects.isNull;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ADVANCED_CONFIG;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ALLOWED_ROLE_AUDIENCE_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ALLOWED_ROLE_AUDIENCE_REQUEST_ATTRIBUTE_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ANDROID;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ANDROID_PACKAGE_NAME_DISPLAY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ANDROID_PACKAGE_NAME_PROPERTY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.APPLE_APP_ID_DISPLAY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.APPLE_APP_ID_PROPERTY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.APPLICATION_SECRET_TYPE_ANDROID_ATTESTATION_CREDENTIALS;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.CLIENT_ATTESTATION;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.CLIENT_ID_SP_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.Error.APPLICATION_ALREADY_EXISTS;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.Error.APPLICATION_NOT_DISCOVERABLE;
@@ -133,6 +146,10 @@ import static org.wso2.carbon.identity.application.common.util.IdentityApplicati
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.Error.INVALID_OFFSET;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.Error.SORTING_NOT_IMPLEMENTED;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ISSUER_SP_PROPERTY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_API_BASED_AUTHENTICATION_ENABLED_DISPLAY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_API_BASED_AUTHENTICATION_ENABLED_PROPERTY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_ATTESTATION_ENABLED_DISPLAY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_ATTESTATION_ENABLED_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_B2B_SS_APP_SP_PROPERTY_DISPLAY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_B2B_SS_APP_SP_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_MANAGEMENT_APP_SP_PROPERTY_DISPLAY_NAME;
@@ -144,8 +161,13 @@ import static org.wso2.carbon.identity.application.common.util.IdentityApplicati
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.TEMPLATE_ID_SP_PROPERTY_DISPLAY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.TEMPLATE_ID_SP_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.LOCAL_SP;
+import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.ORACLE;
+import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.UNION_SEPARATOR;
+import static org.wso2.carbon.identity.application.mgt.ApplicationMgtUtil.getConsoleAccessUrlFromServerConfig;
+import static org.wso2.carbon.identity.application.mgt.ApplicationMgtUtil.getMyAccountAccessUrlFromServerConfig;
 import static org.wso2.carbon.identity.application.mgt.ApplicationMgtUtil.getUserTenantDomain;
 import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.ADD_APPLICATION_ASSOC_ROLES_TAIL;
+import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.ADD_APPLICATION_ASSOC_ROLES_TAIL_ORACLE;
 import static org.wso2.carbon.identity.base.IdentityConstants.SKIP_CONSENT;
 import static org.wso2.carbon.identity.base.IdentityConstants.SKIP_CONSENT_DISPLAY_NAME;
 import static org.wso2.carbon.identity.base.IdentityConstants.SKIP_LOGOUT_CONSENT;
@@ -377,6 +399,10 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         PreparedStatement storeAppPrepStmt = null;
         ResultSet results = null;
         try {
+            String templatedAccessUrl = application.getAccessUrl();
+            if (ApplicationMgtUtil.isConsoleOrMyAccount(applicationName)) {
+                templatedAccessUrl = ApplicationMgtUtil.replaceUrlOriginWithPlaceholders(templatedAccessUrl);
+            }
             String resourceId = generateApplicationResourceId(application);
             String dbProductName = connection.getMetaData().getDatabaseProductName();
             storeAppPrepStmt = connection.prepareStatement(
@@ -397,7 +423,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             storeAppPrepStmt.setString(9, "0");
             storeAppPrepStmt.setString(10, resourceId);
             storeAppPrepStmt.setString(11, application.getImageUrl());
-            storeAppPrepStmt.setString(12, application.getAccessUrl());
+            storeAppPrepStmt.setString(12, templatedAccessUrl);
             storeAppPrepStmt.execute();
 
             results = storeAppPrepStmt.getGeneratedKeys();
@@ -423,6 +449,26 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             ServiceProviderProperty isB2BSSAppProperty = buildIsB2BSSAppProperty(application);
             serviceProviderProperties.add(isB2BSSAppProperty);
 
+            ServiceProviderProperty isAPIBasedAuthenticationEnabled
+                    = buildIsAPIBasedAuthenticationEnabledProperty(application);
+            serviceProviderProperties.add(isAPIBasedAuthenticationEnabled);
+
+            if (application.getClientAttestationMetaData() != null) {
+                ServiceProviderProperty isAttestationEnabled =
+                        buildIsAttestationEnabledProperty(application.getClientAttestationMetaData());
+                serviceProviderProperties.add(isAttestationEnabled);
+
+                ServiceProviderProperty androidPackageName =
+                        buildAndroidPackageNameProperty(application.getClientAttestationMetaData());
+                serviceProviderProperties.add(androidPackageName);
+
+                ServiceProviderProperty appleAppId =
+                        buildAppleAppIdProperty(application.getClientAttestationMetaData());
+                serviceProviderProperties.add(appleAppId);
+
+                storeAndroidAttestationServiceCredentialAsSecret(application);
+            }
+
             ServiceProviderProperty allowedRoleAudienceProperty = buildAllowedRoleAudienceProperty(application);
             serviceProviderProperties.add(allowedRoleAudienceProperty);
             application.setSpProperties(serviceProviderProperties.toArray(new ServiceProviderProperty[0]));
@@ -433,8 +479,11 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 log.debug("Application Stored successfully with applicationId: " + applicationId +
                         " and applicationResourceId: " + resourceId);
             }
-
+            application.setApplicationResourceId(resourceId);
             return new ApplicationCreateResult(resourceId, applicationId);
+        } catch (URLBuilderException e) {
+            throw new IdentityApplicationManagementException(
+                    "Error occurred when replacing origin of the access URL with placeholders", e);
         } finally {
             IdentityApplicationManagementUtil.closeResultSet(results);
             IdentityApplicationManagementUtil.closeStatement(storeAppPrepStmt);
@@ -453,15 +502,30 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             return;
         }
         // Build SQL query to insert multiple values to the table based on the roles.size.
-        StringBuilder queryBuilder = new StringBuilder(ApplicationMgtDBQueries.ADD_APPLICATION_ASSOC_ROLES_HEAD);
-        for (int i = 0; i < roles.size(); i++) {
-            queryBuilder.append(String.format(ADD_APPLICATION_ASSOC_ROLES_TAIL, i));
-            if (i != roles.size() - 1) {
-                queryBuilder.append(",");
-            }
-        }
+        try {
+            String dbProductName = connection.getMetaData().getDatabaseProductName();
+            StringBuilder queryBuilder = new StringBuilder(ORACLE.equals(dbProductName) ?
+                    ApplicationMgtDBQueries.ADD_APPLICATION_ASSOC_ROLES_HEAD_ORACLE :
+                    ApplicationMgtDBQueries.ADD_APPLICATION_ASSOC_ROLES_HEAD);
+            for (int i = 0; i < roles.size(); i++) {
+                if (ORACLE.equals(dbProductName)) {
+                    queryBuilder.append(String.format(
+                            ApplicationMgtDBQueries.ADD_APPLICATION_ASSOC_ROLES_VALUES_ORACLE, i));
+                    if (i != roles.size() - 1) {
+                        queryBuilder.append(UNION_SEPARATOR);
+                    }
+                } else {
+                    queryBuilder.append(String.format(ADD_APPLICATION_ASSOC_ROLES_TAIL, i));
+                    if (i != roles.size() - 1) {
+                        queryBuilder.append(",");
+                    }
+                }
 
-        try (NamedPreparedStatement statement = new NamedPreparedStatement(connection, queryBuilder.toString())) {
+            }
+            if (ORACLE.equals(dbProductName)) {
+                queryBuilder.append(ADD_APPLICATION_ASSOC_ROLES_TAIL_ORACLE);
+            }
+            NamedPreparedStatement statement = new NamedPreparedStatement(connection, queryBuilder.toString());
             for (int i = 0; i < roles.size(); i++) {
                 statement.setString(ApplicationMgtDBQueries.SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_APP_ID + i,
                         applicationId);
@@ -946,13 +1010,23 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             sql = ApplicationMgtDBQueries.UPDATE_BASIC_APPINFO;
         }
 
+        String templatedAccessUrl = serviceProvider.getAccessUrl();
+        if (ApplicationMgtUtil.isConsoleOrMyAccount(applicationName)) {
+            try {
+                templatedAccessUrl = ApplicationMgtUtil.replaceUrlOriginWithPlaceholders(templatedAccessUrl);
+            } catch (URLBuilderException e) {
+                throw new IdentityApplicationManagementException(
+                        "Error occurred when replacing origin of the access URL with placeholders", e);
+            }
+        }
+
         try (NamedPreparedStatement statement = new NamedPreparedStatement(connection, sql)) {
             statement.setString(ApplicationTableColumns.APP_NAME, applicationName);
             statement.setString(ApplicationTableColumns.DESCRIPTION, description);
             statement.setString(ApplicationTableColumns.IS_SAAS_APP, isSaasApp ? "1" : "0");
             statement.setString(ApplicationTableColumns.IS_DISCOVERABLE, isDiscoverable ? "1" : "0");
             statement.setString(ApplicationTableColumns.IMAGE_URL, serviceProvider.getImageUrl());
-            statement.setString(ApplicationTableColumns.ACCESS_URL, serviceProvider.getAccessUrl());
+            statement.setString(ApplicationTableColumns.ACCESS_URL, templatedAccessUrl);
             if (isValidUserForOwnerUpdate) {
                 User owner = serviceProvider.getOwner();
                 statement.setString(ApplicationTableColumns.USERNAME, owner.getUserName());
@@ -1610,8 +1684,16 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             // IS_LOCAL_CLAIM_DIALECT=?, IS_SEND_LOCAL_SUBJECT_ID=? WHERE TENANT_ID= ? AND ID = ?
             storeClaimDialectAndSendLocalSubIdPrepStmt.setString(1, claimConfiguration.isLocalClaimDialect() ? "1"
                     : "0");
-            storeClaimDialectAndSendLocalSubIdPrepStmt.setString(2,
-                    claimConfiguration.isAlwaysSendMappedLocalSubjectId() ? "1" : "0");
+            if (claimConfiguration.isAlwaysSendMappedLocalSubjectId() &&
+                    claimConfiguration.isMappedLocalSubjectMandatory()) {
+                storeClaimDialectAndSendLocalSubIdPrepStmt.setString(2, "2");
+            } else if (claimConfiguration.isAlwaysSendMappedLocalSubjectId() &&
+                    !claimConfiguration.isMappedLocalSubjectMandatory()) {
+                storeClaimDialectAndSendLocalSubIdPrepStmt.setString(2, "1");
+            } else {
+                storeClaimDialectAndSendLocalSubIdPrepStmt.setString(2, "0");
+            }
+
             storeClaimDialectAndSendLocalSubIdPrepStmt.setInt(3, tenantID);
             storeClaimDialectAndSendLocalSubIdPrepStmt.setInt(4, applicationId);
             storeClaimDialectAndSendLocalSubIdPrepStmt.executeUpdate();
@@ -1872,7 +1954,26 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 serviceProvider.setApplicationName(basicAppDataResultSet.getString(3));
                 serviceProvider.setDescription(basicAppDataResultSet.getString(6));
                 serviceProvider.setImageUrl(basicAppDataResultSet.getString(ApplicationTableColumns.IMAGE_URL));
+
                 serviceProvider.setAccessUrl(basicAppDataResultSet.getString(ApplicationTableColumns.ACCESS_URL));
+                if (ApplicationMgtUtil.isConsoleOrMyAccount(applicationName)) {
+                    serviceProvider.setAccessUrl(ApplicationMgtUtil.resolveOriginUrlFromPlaceholders(
+                            basicAppDataResultSet.getString(ApplicationTableColumns.ACCESS_URL)));
+                }
+                String tenantDomain = IdentityTenantUtil.getTenantDomain(tenantID);
+                if (ApplicationMgtUtil.isConsole(serviceProvider.getApplicationName())) {
+                    String consoleAccessUrl = getConsoleAccessUrlFromServerConfig(tenantDomain);
+                    if (StringUtils.isNotBlank(consoleAccessUrl)) {
+                        serviceProvider.setAccessUrl(consoleAccessUrl);
+                    }
+                }
+                if (ApplicationMgtUtil.isMyAccount(serviceProvider.getApplicationName())) {
+                    String myAccountAccessUrl = getMyAccountAccessUrlFromServerConfig(tenantDomain);
+                    if (StringUtils.isNotBlank(myAccountAccessUrl)) {
+                        serviceProvider.setAccessUrl(myAccountAccessUrl);
+                    }
+                }
+
                 serviceProvider.setDiscoverable(getBooleanValue(basicAppDataResultSet.getString(ApplicationTableColumns
                         .IS_DISCOVERABLE)));
 
@@ -1920,6 +2021,9 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             }
 
             return serviceProvider;
+        } catch (URLBuilderException e) {
+            throw new IdentityApplicationManagementException(
+                    "Error occurred when resolving origin of the access URL with placeholders", e);
         } finally {
             IdentityApplicationManagementUtil.closeResultSet(basicAppDataResultSet);
             IdentityApplicationManagementUtil.closeStatement(loadBasicAppInfoStmt);
@@ -1990,7 +2094,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 sqlQuery = String.format(
                         ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_DB2SQL, filterString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
-                populateApplicationSearchQuery(getAppNamesStmt, tenantID, filterValues, offset + 1, offset + limit);
+                populateApplicationSearchQuery(getAppNamesStmt, tenantID, filterValues, offset, offset + limit);
             } else if (databaseProductName.contains("INFORMIX")) {
                 sqlQuery = String.format(
                         ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_INFORMIX, filterString);
@@ -2014,14 +2118,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
             appNameResultSet = getAppNamesStmt.executeQuery();
 
-            if (filterString.contains("SP_INBOUND_AUTH")) {
-                while (appNameResultSet.next()) {
-                    appInfo.add(buildApplicationBasicInfoWithInboundConfig(appNameResultSet));
-                }
-            } else {
-                while (appNameResultSet.next()) {
-                    appInfo.add(buildApplicationBasicInfo(appNameResultSet));
-                }
+            while (appNameResultSet.next()) {
+                appInfo.add(buildApplicationBasicInfo(appNameResultSet));
             }
 
         } catch (SQLException e) {
@@ -2076,6 +2174,17 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             serviceProvider.setTemplateId(getTemplateId(propertyList));
             serviceProvider.setManagementApp(getIsManagementApp(propertyList));
             serviceProvider.setB2BSelfServiceApp(getIsB2BSSApp(propertyList));
+            serviceProvider.setAPIBasedAuthenticationEnabled(getIsAPIBasedAuthenticationEnabled(propertyList));
+            ClientAttestationMetaData clientAttestationMetaData = new ClientAttestationMetaData();
+            clientAttestationMetaData.setAttestationEnabled(getIsAttestationEnabled(propertyList));
+            clientAttestationMetaData.setAndroidPackageName(getAndroidPackageName(propertyList));
+            clientAttestationMetaData.setAppleAppId(getAppleAppId(propertyList));
+            if (StringUtils.isNotEmpty(clientAttestationMetaData.getAndroidPackageName())
+                    && clientAttestationMetaData.isAttestationEnabled()) {
+                clientAttestationMetaData.setAndroidAttestationServiceCredentials
+                        (getAndroidAttestationServiceCredentials(serviceProvider));
+            }
+            serviceProvider.setClientAttestationMetaData(clientAttestationMetaData);
             serviceProvider.setInboundAuthenticationConfig(getInboundAuthenticationConfig(
                     applicationId, connection, tenantID));
             serviceProvider
@@ -2281,6 +2390,66 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         return Boolean.parseBoolean(value);
     }
 
+    private boolean getIsAPIBasedAuthenticationEnabled(List<ServiceProviderProperty> propertyList) {
+
+        String value = propertyList.stream()
+                .filter(property -> IS_API_BASED_AUTHENTICATION_ENABLED_PROPERTY_NAME.equals(property.getName()))
+                .findFirst()
+                .map(ServiceProviderProperty::getValue)
+                .orElse(StringUtils.EMPTY);
+        return Boolean.parseBoolean(value);
+    }
+
+    private boolean getIsAttestationEnabled(List<ServiceProviderProperty> propertyList) {
+
+        String value = propertyList.stream()
+                .filter(property -> IS_ATTESTATION_ENABLED_PROPERTY_NAME.equals(property.getName()))
+                .findFirst()
+                .map(ServiceProviderProperty::getValue)
+                .orElse(StringUtils.EMPTY);
+        return Boolean.parseBoolean(value);
+    }
+
+    private String getAndroidPackageName(List<ServiceProviderProperty> propertyList) {
+
+        return propertyList.stream()
+                .filter(property -> ANDROID_PACKAGE_NAME_PROPERTY_NAME.equals(property.getName()))
+                .findFirst()
+                .map(ServiceProviderProperty::getValue)
+                .orElse(StringUtils.EMPTY);
+    }
+
+    private String getAppleAppId(List<ServiceProviderProperty> propertyList) {
+
+        return propertyList.stream()
+                .filter(property -> APPLE_APP_ID_PROPERTY_NAME.equals(property.getName()))
+                .findFirst()
+                .map(ServiceProviderProperty::getValue)
+                .orElse(StringUtils.EMPTY);
+    }
+
+    private String getAndroidAttestationServiceCredentials(ServiceProvider serviceProvider)
+            throws IdentityApplicationManagementException {
+
+        try {
+            if (ApplicationManagementServiceComponentHolder.getInstance()
+                    .getSecretManager().isSecretExist(APPLICATION_SECRET_TYPE_ANDROID_ATTESTATION_CREDENTIALS,
+                            getAndroidAttestationSecretName(serviceProvider.getApplicationResourceId()))) {
+                ResolvedSecret resolvedSecret = ApplicationManagementServiceComponentHolder.getInstance()
+                        .getSecretResolveManager()
+                        .getResolvedSecret(APPLICATION_SECRET_TYPE_ANDROID_ATTESTATION_CREDENTIALS,
+                                getAndroidAttestationSecretName(serviceProvider.getApplicationResourceId()));
+                if (resolvedSecret != null) {
+                    return resolvedSecret.getResolvedSecretValue();
+                }
+            }
+        } catch (SecretManagementException e) {
+            throw new IdentityApplicationManagementException("Failed to get Android Attestation Service Credentials" +
+                    " for service provider with id: " + serviceProvider.getApplicationID(), e);
+        }
+        return StringUtils.EMPTY;
+    }
+
     private String getTemplateId(List<ServiceProviderProperty> propertyList) {
 
         return propertyList.stream()
@@ -2328,7 +2497,26 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 serviceProvider.setApplicationName(rs.getString(ApplicationTableColumns.APP_NAME));
                 serviceProvider.setDescription(rs.getString(ApplicationTableColumns.DESCRIPTION));
                 serviceProvider.setImageUrl(rs.getString(ApplicationTableColumns.IMAGE_URL));
+
                 serviceProvider.setAccessUrl(rs.getString(ApplicationTableColumns.ACCESS_URL));
+                if (ApplicationMgtUtil.isConsoleOrMyAccount(serviceProvider.getApplicationName())) {
+                    serviceProvider.setAccessUrl(ApplicationMgtUtil.resolveOriginUrlFromPlaceholders(
+                            rs.getString(ApplicationTableColumns.ACCESS_URL)));
+                }
+                String tenantDomain = IdentityTenantUtil.getTenantDomain(rs.getInt(ApplicationTableColumns.TENANT_ID));
+                if (ApplicationMgtUtil.isConsole(serviceProvider.getApplicationName())) {
+                    String consoleAccessUrl = getConsoleAccessUrlFromServerConfig(tenantDomain);
+                    if (StringUtils.isNotBlank(consoleAccessUrl)) {
+                        serviceProvider.setAccessUrl(consoleAccessUrl);
+                    }
+                }
+                if (ApplicationMgtUtil.isMyAccount(serviceProvider.getApplicationName())) {
+                    String myAccountAccessUrl = getMyAccountAccessUrlFromServerConfig(tenantDomain);
+                    if (StringUtils.isNotBlank(myAccountAccessUrl)) {
+                        serviceProvider.setAccessUrl(myAccountAccessUrl);
+                    }
+                }
+
                 serviceProvider.setDiscoverable(getBooleanValue(rs.getString(ApplicationTableColumns.IS_DISCOVERABLE)));
 
                 User owner = new User();
@@ -2378,6 +2566,9 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             }
 
             return serviceProvider;
+        } catch (URLBuilderException e) {
+            throw new IdentityApplicationManagementException(
+                    "Error occurred when resolving origin of the access URL with placeholders", e);
         } finally {
             IdentityApplicationManagementUtil.closeResultSet(rs);
             IdentityApplicationManagementUtil.closeStatement(prepStmt);
@@ -2391,14 +2582,13 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
     /**
      * @param applicationid
+     * @param tenantID
      * @param connection
      * @return
      * @throws SQLException
      */
-    private String getAuthenticationType(int applicationid, Connection connection)
+    private String getAuthenticationType(int applicationid,  int tenantID, Connection connection)
             throws SQLException {
-
-        int tenantID = CarbonContext.getThreadLocalCarbonContext().getTenantId();
 
         PreparedStatement authTypeStmt = null;
         ResultSet authTypeResultSet = null;
@@ -2876,7 +3066,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
             localAndOutboundConfiguration.setAuthenticationSteps(authenticationSteps);
 
-            String authType = getAuthenticationType(applicationId, connection);
+            String authType = getAuthenticationType(applicationId, tenantId, connection);
             if (StringUtils.equalsIgnoreCase(authType, ApplicationConstants.AUTH_TYPE_FEDERATED)
                     || StringUtils.equalsIgnoreCase(authType, ApplicationConstants.AUTH_TYPE_FLOW)) {
                 if (ArrayUtils.isEmpty(authenticationSteps)) {
@@ -3111,8 +3301,20 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             while (loadClaimConfigsResultSet.next()) {
                 claimConfig.setRoleClaimURI(loadClaimConfigsResultSet.getString(1));
                 claimConfig.setLocalClaimDialect("1".equals(loadClaimConfigsResultSet.getString(2)));
-                claimConfig.setAlwaysSendMappedLocalSubjectId("1".equals(loadClaimConfigsResultSet
-                        .getString(3)));
+
+                switch (loadClaimConfigsResultSet.getString(3)) {
+                    case "1":
+                        claimConfig.setAlwaysSendMappedLocalSubjectId(true);
+                        claimConfig.setMappedLocalSubjectMandatory(false);
+                        break;
+                    case "2":
+                        claimConfig.setAlwaysSendMappedLocalSubjectId(true);
+                        claimConfig.setMappedLocalSubjectMandatory(true);
+                        break;
+                    default:
+                       claimConfig.setAlwaysSendMappedLocalSubjectId(false);
+                       claimConfig.setMappedLocalSubjectMandatory(false);
+                }
             }
         } catch (SQLException e) {
             throw new IdentityApplicationManagementException("Error while retrieving all application", e);
@@ -3651,7 +3853,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             } else if (databaseProductName.contains("DB2")) {
                 sqlQuery = ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_DB2SQL;
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
-                populateListAppNamesQueryValues(tenantID, offset + 1, offset + limit, getAppNamesStmt);
+                populateListAppNamesQueryValues(tenantID, offset, offset + limit, getAppNamesStmt);
             } else if (databaseProductName.contains("INFORMIX")) {
                 sqlQuery = ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_INFORMIX;
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
@@ -4811,7 +5013,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         return null;
     }
 
-    private void updateConfigurationsAsServiceProperties(ServiceProvider sp) {
+    private void updateConfigurationsAsServiceProperties(ServiceProvider sp)
+            throws IdentityApplicationManagementException {
 
         if (sp.getSpProperties() == null) {
             sp.setSpProperties(new ServiceProviderProperty[0]);
@@ -4850,7 +5053,102 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         ServiceProviderProperty allowedRoleAudienceProperty = buildAllowedRoleAudienceProperty(sp);
         spPropertyMap.put(allowedRoleAudienceProperty.getName(), allowedRoleAudienceProperty);
 
+        ServiceProviderProperty isAPIBasedAuthenticationEnabled = buildIsAPIBasedAuthenticationEnabledProperty(sp);
+        spPropertyMap.put(isAPIBasedAuthenticationEnabled.getName(), isAPIBasedAuthenticationEnabled);
+
+        if (sp.getClientAttestationMetaData() != null) {
+            ServiceProviderProperty isAttestationEnabled =
+                    buildIsAttestationEnabledProperty(sp.getClientAttestationMetaData());
+            spPropertyMap.put(isAttestationEnabled.getName(), isAttestationEnabled);
+
+            ServiceProviderProperty androidPackageName =
+                    buildAndroidPackageNameProperty(sp.getClientAttestationMetaData());
+            spPropertyMap.put(androidPackageName.getName(), androidPackageName);
+
+            ServiceProviderProperty appleAppId =
+                    buildAppleAppIdProperty(sp.getClientAttestationMetaData());
+            spPropertyMap.put(appleAppId.getName(), appleAppId);
+
+            storeAndroidAttestationServiceCredentialAsSecret(sp);
+        }
+
         sp.setSpProperties(spPropertyMap.values().toArray(new ServiceProviderProperty[0]));
+    }
+
+    private ServiceProviderProperty buildIsAPIBasedAuthenticationEnabledProperty(ServiceProvider sp) {
+
+        ServiceProviderProperty isAPIBasedAuthenticationEnabled = new ServiceProviderProperty();
+        isAPIBasedAuthenticationEnabled.setName(IS_API_BASED_AUTHENTICATION_ENABLED_PROPERTY_NAME);
+        isAPIBasedAuthenticationEnabled.setDisplayName(IS_API_BASED_AUTHENTICATION_ENABLED_DISPLAY_NAME);
+        isAPIBasedAuthenticationEnabled.setValue(String.valueOf(sp.isAPIBasedAuthenticationEnabled()));
+        return isAPIBasedAuthenticationEnabled;
+    }
+
+    private ServiceProviderProperty buildIsAttestationEnabledProperty
+            (ClientAttestationMetaData clientAttestationMetaData) {
+
+        ServiceProviderProperty isAttestationEnabled = new ServiceProviderProperty();
+        isAttestationEnabled.setName(IS_ATTESTATION_ENABLED_PROPERTY_NAME);
+        isAttestationEnabled.setDisplayName(IS_ATTESTATION_ENABLED_DISPLAY_NAME);
+        isAttestationEnabled.setValue(String.valueOf(clientAttestationMetaData.isAttestationEnabled()));
+        return isAttestationEnabled;
+    }
+
+    private ServiceProviderProperty buildAndroidPackageNameProperty
+            (ClientAttestationMetaData clientAttestationMetaData) {
+
+        ServiceProviderProperty androidPackageName = new ServiceProviderProperty();
+        androidPackageName.setName(ANDROID_PACKAGE_NAME_PROPERTY_NAME);
+        androidPackageName.setDisplayName(ANDROID_PACKAGE_NAME_DISPLAY_NAME);
+        if (StringUtils.isNotBlank(clientAttestationMetaData.getAndroidPackageName())) {
+            androidPackageName.setValue(String.valueOf(clientAttestationMetaData.getAndroidPackageName()));
+        }
+        return androidPackageName;
+    }
+
+    private ServiceProviderProperty buildAppleAppIdProperty
+            (ClientAttestationMetaData clientAttestationMetaData) {
+
+        ServiceProviderProperty appleAppId = new ServiceProviderProperty();
+        appleAppId.setName(APPLE_APP_ID_PROPERTY_NAME);
+        appleAppId.setDisplayName(APPLE_APP_ID_DISPLAY_NAME);
+        if (StringUtils.isNotBlank(clientAttestationMetaData.getAppleAppId())) {
+            appleAppId.setValue(String.valueOf(clientAttestationMetaData.getAppleAppId()));
+        }
+        return appleAppId;
+    }
+
+    private void storeAndroidAttestationServiceCredentialAsSecret(ServiceProvider sp)
+            throws IdentityApplicationManagementException {
+
+        if (sp.getClientAttestationMetaData() != null &&
+                sp.getClientAttestationMetaData().getAndroidAttestationServiceCredentials() != null) {
+            SecretManager secretManager = ApplicationManagementServiceComponentHolder.getInstance().getSecretManager();
+            Secret secret = new Secret(getAndroidAttestationSecretName(sp.getApplicationResourceId()));
+            secret.setSecretValue(sp.getClientAttestationMetaData().getAndroidAttestationServiceCredentials());
+            try {
+                if (secretManager.isSecretExist(APPLICATION_SECRET_TYPE_ANDROID_ATTESTATION_CREDENTIALS,
+                        getAndroidAttestationSecretName(sp.getApplicationResourceId()))) {
+                    secretManager.updateSecretValue(APPLICATION_SECRET_TYPE_ANDROID_ATTESTATION_CREDENTIALS,
+                            getAndroidAttestationSecretName(sp.getApplicationResourceId()),
+                            sp.getClientAttestationMetaData().getAndroidAttestationServiceCredentials());
+
+                } else {
+                    secretManager.addSecret(APPLICATION_SECRET_TYPE_ANDROID_ATTESTATION_CREDENTIALS,
+                            secret);
+                }
+            } catch (SecretManagementException e) {
+                throw new IdentityApplicationManagementException("Failed to add / update" +
+                        " Android Attestation Service Credentials" +
+                        " for service provider with id: " + sp.getApplicationID(), e);
+            }
+        }
+
+    }
+
+    private String getAndroidAttestationSecretName(String applicationResourceId) {
+
+        return applicationResourceId + ":" + CLIENT_ATTESTATION + ":" + ANDROID;
     }
 
     private ServiceProviderProperty buildIsManagementAppProperty(ServiceProvider sp) {
@@ -5169,6 +5467,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             if (application != null) {
                 // Delete the application certificate if there is any
                 deleteApplicationCertificate(connection, application);
+                // Delete android attestation service credentials if there is any
+                deleteAndroidAttestationCredentials(application);
 
                 try (NamedPreparedStatement deleteAppStatement =
                              new NamedPreparedStatement(connection,
@@ -5196,6 +5496,23 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         } catch (SQLException e) {
             String msg = "Error occurred while deleting application with resourceId: %s in tenantDomain: %s.";
             throw new IdentityApplicationManagementException(String.format(msg, resourceId, tenantDomain), e);
+        }
+    }
+
+    private void deleteAndroidAttestationCredentials(ServiceProvider application)
+            throws IdentityApplicationManagementException {
+
+        try {
+            if (application.getClientAttestationMetaData() != null
+                    && StringUtils.isNotEmpty(application.getClientAttestationMetaData()
+                    .getAndroidAttestationServiceCredentials())) {
+                ApplicationManagementServiceComponentHolder.getInstance()
+                        .getSecretManager().deleteSecret(APPLICATION_SECRET_TYPE_ANDROID_ATTESTATION_CREDENTIALS,
+                                getAndroidAttestationSecretName(application.getApplicationResourceId()));
+            }
+        } catch (SecretManagementException e) {
+            throw new IdentityApplicationManagementException("Failed to delete Android Attestation " +
+                    "Service Credentials for service provider with id: " + application.getApplicationID(), e);
         }
     }
 
@@ -5599,7 +5916,31 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
         basicInfo.setApplicationResourceId(appNameResultSet.getString(ApplicationTableColumns.UUID));
         basicInfo.setImageUrl(appNameResultSet.getString(ApplicationTableColumns.IMAGE_URL));
-        basicInfo.setAccessUrl(appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL));
+
+        try {
+            basicInfo.setAccessUrl(appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL));
+            if (ApplicationMgtUtil.isConsoleOrMyAccount(basicInfo.getApplicationName())) {
+                basicInfo.setAccessUrl(ApplicationMgtUtil.resolveOriginUrlFromPlaceholders(
+                        appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL)));
+            }
+        } catch (URLBuilderException e) {
+            throw new IdentityApplicationManagementException(
+                    "Error occurred when resolving origin of the access URL with placeholders", e);
+        }
+        String tenantDomain =
+                IdentityTenantUtil.getTenantDomain(appNameResultSet.getInt(ApplicationTableColumns.TENANT_ID));
+        if (ApplicationMgtUtil.isConsole(basicInfo.getApplicationName())) {
+            String consoleAccessUrl = getConsoleAccessUrlFromServerConfig(tenantDomain);
+            if (StringUtils.isNotBlank(consoleAccessUrl)) {
+                basicInfo.setAccessUrl(consoleAccessUrl);
+            }
+        }
+        if (ApplicationMgtUtil.isMyAccount(basicInfo.getApplicationName())) {
+            String myAccountAccessUrl = getMyAccountAccessUrlFromServerConfig(tenantDomain);
+            if (StringUtils.isNotBlank(myAccountAccessUrl)) {
+                basicInfo.setAccessUrl(myAccountAccessUrl);
+            }
+        }
 
         String username = appNameResultSet.getString(ApplicationTableColumns.USERNAME);
         String userStoreDomain = appNameResultSet.getString(ApplicationTableColumns.USER_STORE);
@@ -5632,7 +5973,31 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
         basicInfo.setApplicationResourceId(appNameResultSet.getString(ApplicationTableColumns.UUID));
         basicInfo.setImageUrl(appNameResultSet.getString(ApplicationTableColumns.IMAGE_URL));
-        basicInfo.setAccessUrl(appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL));
+
+        try {
+            basicInfo.setAccessUrl(appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL));
+            if (ApplicationMgtUtil.isConsoleOrMyAccount(basicInfo.getApplicationName())) {
+                basicInfo.setAccessUrl(ApplicationMgtUtil.resolveOriginUrlFromPlaceholders(
+                        appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL)));
+            }
+        } catch (URLBuilderException e) {
+            throw new IdentityApplicationManagementException(
+                    "Error occurred when resolving origin of the access URL with placeholders", e);
+        }
+        String tenantDomain =
+                IdentityTenantUtil.getTenantDomain(appNameResultSet.getInt(ApplicationTableColumns.TENANT_ID));
+        if (ApplicationMgtUtil.isConsole(basicInfo.getApplicationName())) {
+            String consoleAccessUrl = getConsoleAccessUrlFromServerConfig(tenantDomain);
+            if (StringUtils.isNotBlank(consoleAccessUrl)) {
+                basicInfo.setAccessUrl(consoleAccessUrl);
+            }
+        }
+        if (ApplicationMgtUtil.isMyAccount(basicInfo.getApplicationName())) {
+            String myAccountAccessUrl = getMyAccountAccessUrlFromServerConfig(tenantDomain);
+            if (StringUtils.isNotBlank(myAccountAccessUrl)) {
+                basicInfo.setAccessUrl(myAccountAccessUrl);
+            }
+        }
 
         String inboundAuthKey = appNameResultSet.getString(ApplicationInboundTableColumns.INBOUND_AUTH_KEY);
         String inboundAuthType = appNameResultSet.getString(ApplicationInboundTableColumns.INBOUND_AUTH_TYPE);

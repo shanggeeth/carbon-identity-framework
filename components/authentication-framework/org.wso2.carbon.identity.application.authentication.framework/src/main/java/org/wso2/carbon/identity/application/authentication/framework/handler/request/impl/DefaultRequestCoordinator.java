@@ -57,6 +57,7 @@ import org.wso2.carbon.identity.application.authentication.framework.util.LoginC
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
+import org.wso2.carbon.identity.application.common.model.ServiceProviderProperty;
 import org.wso2.carbon.identity.central.log.mgt.utils.LogConstants;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
@@ -82,6 +83,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
@@ -93,6 +95,8 @@ import static org.wso2.carbon.identity.application.authentication.framework.util
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.ACCOUNT_UNLOCK_TIME_CLAIM;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.AnalyticsAttributes.SESSION_ID;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.BACK_TO_FIRST_STEP;
+import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.IS_API_BASED;
+import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.ORGANIZATION_AUTHENTICATOR;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.REDIRECT_URL;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.REQUEST_PARAM_SP;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.RequestParams.AUTH_TYPE;
@@ -103,6 +107,7 @@ import static org.wso2.carbon.identity.application.authentication.framework.util
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.ResidentIdpPropertyName.ACCOUNT_DISABLE_HANDLER_ENABLE_PROPERTY;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.USER_TENANT_DOMAIN;
 import static org.wso2.carbon.identity.application.authentication.framework.util.SessionNonceCookieUtil.NONCE_ERROR_CODE;
+import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.IS_APP_SHARED;
 
 /**
  * Request Coordinator
@@ -110,7 +115,8 @@ import static org.wso2.carbon.identity.application.authentication.framework.util
 public class DefaultRequestCoordinator extends AbstractRequestCoordinator implements RequestCoordinator {
 
     private static final Log log = LogFactory.getLog(DefaultRequestCoordinator.class);
-    public static final String REDIRECT_URI = "redirect_uri";
+    private static final String REDIRECT_URI = "redirect_uri";
+    private static final String TRUE = "true";
     private static volatile DefaultRequestCoordinator instance;
     private static final String ACR_VALUES_ATTRIBUTE = "acr_values";
     private static final String REQUESTED_ATTRIBUTES = "requested_attributes";
@@ -138,11 +144,6 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
     private AuthenticationRequestCacheEntry getAuthenticationRequestFromRequest(HttpServletRequest request) {
 
         return (AuthenticationRequestCacheEntry) request.getAttribute(FrameworkConstants.RequestAttribute.AUTH_REQUEST);
-    }
-
-    private boolean isAPIBasedAuthenticationFlow(HttpServletRequest request) {
-
-        return Boolean.TRUE.equals(request.getAttribute(FrameworkConstants.IS_API_BASED_AUTH_FLOW));
     }
 
     @Override
@@ -311,8 +312,26 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
                         (FrameworkUtils.getCurrentStandardNano() > context.getExpiryTime())) {
                     log.error("Redirecting to retry page as the authentication context has expired.");
                     FrameworkUtils.sendToRetryPage(request, responseWrapper, context,
-                            "authentication.flow.timeout", "authentication.flow.timeout.description");
+                            FrameworkConstants.ERROR_STATUS_AUTH_FLOW_TIMEOUT,
+                            FrameworkConstants.ERROR_DESCRIPTION_AUTH_FLOW_TIMEOUT);
                     return;
+                }
+
+                // Check if the Identity Framework (IDF) is initiated from authenticators like SMS OTP or Email OTP,
+                // which have two procedures: 1. Identify the User, and 2. Perform authentication.
+                // After the first procedure, the context's current authenticator is set to the corresponding
+                // authenticator.
+                // Users have the option to restart the flow from the 1st step by choosing a different option.
+                // In such cases, if it's the first step in the authentication process, we need to remove
+                // the context's current authenticator to reset the flow.
+                // Reference: https://github.com/wso2/product-is/issues/18655
+                if (FrameworkUtils.isIdfInitiatedFromAuthenticator(context)
+                        && isStepHasMultiOption(context)
+                        && context.getCurrentStep() == 1
+                        && !isIdentifierFirstRequest(request)) {
+
+                    // Reset the current authenticator in the context since it's the first step in the authentication.
+                    context.setCurrentAuthenticator(null);
                 }
 
                 /*
@@ -380,7 +399,7 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
                 String message = "Requested client: " + request.getRemoteAddr() + ", URI :" + request.getMethod() +
                         ":" + request.getRequestURI() + ", User-Agent: " + userAgent + " , Referer: " + referer;
 
-                log.error("Context does not exist. Probably due to invalidated cache. " + message);
+                log.warn("Context does not exist. Probably due to invalidated cache. " + message);
                 FrameworkUtils.sendToRetryPage(request, responseWrapper, context,
                         FrameworkConstants.ERROR_STATUS_AUTH_CONTEXT_NULL,
                         FrameworkConstants.ERROR_DESCRIPTION_AUTH_CONTEXT_NULL);
@@ -724,8 +743,9 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
         buildOutboundQueryString(request, context);
 
         String redirectUrl = request.getParameter(REDIRECT_URI);
-        if (isAPIBasedAuthenticationFlow(request)) {
+        if (FrameworkUtils.isAPIBasedAuthenticationFlow(request)) {
             context.setProperty(REDIRECT_URL, redirectUrl);
+            context.setProperty(IS_API_BASED, TRUE);
         }
 
         return context;
@@ -826,6 +846,7 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
         }
         // Get service provider chain
         SequenceConfig effectiveSequence = getSequenceConfig(context, request.getParameterMap());
+        setStepConfigAuthenticatorList(effectiveSequence);
 
         if (acrRequested != null) {
             for (String acr : acrRequested) {
@@ -833,17 +854,29 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
             }
         }
 
+        String sessionContextKey = null;
         Cookie cookie = FrameworkUtils.getAuthCookie(request);
-
-        // if cookie exists user has previously authenticated
         if (cookie != null) {
-
             if (log.isDebugEnabled()) {
                 log.debug(FrameworkConstants.COMMONAUTH_COOKIE + " cookie is available with the value: " + cookie
                         .getValue());
             }
+            sessionContextKey = DigestUtils.sha256Hex(cookie.getValue());
+        } else if (FrameworkUtils.isAPIBasedAuthenticationFlow(request)) {
+            /* If it's an API based authentication flow, the sha256 hashed value
+             of the session identifier can be passed as a query param as well.*/
+            String hashedSessionId = request.getParameter(FrameworkConstants.RequestParams.SESSION_ID);
+            if (StringUtils.isNotBlank(hashedSessionId)) {
+                if (log.isDebugEnabled()) {
+                    log.debug(FrameworkConstants.RequestParams.SESSION_ID +
+                            " query param is available with the value: " + hashedSessionId);
+                }
+                sessionContextKey = hashedSessionId;
+            }
+        }
+        // if a value for the sessionContextKey exists user has previously authenticated
+        if (sessionContextKey != null) {
 
-            String sessionContextKey = DigestUtils.sha256Hex(cookie.getValue());
             SessionContext sessionContext = null;
             // get the authentication details from the cache
             try {
@@ -988,7 +1021,12 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
                     .append("&relyingParty=").append(URLEncoder.encode(context.getRelyingParty(), "UTF-8"))
                     .append("&type=").append(context.getRequestType()).append("&")
                     .append(FrameworkConstants.REQUEST_PARAM_SP).append("=")
-                    .append(URLEncoder.encode(context.getServiceProviderName(), "UTF-8")).append("&isSaaSApp=")
+                    .append(URLEncoder.encode(context.getServiceProviderName(), "UTF-8")).append("&");
+            if (context.getServiceProviderResourceId() != null) {
+                outboundQueryStringBuilder.append(FrameworkConstants.REQUEST_PARAM_SP_UUID).append("=")
+                        .append(URLEncoder.encode(context.getServiceProviderResourceId(), "UTF-8")).append("&");
+            }
+            outboundQueryStringBuilder.append("&isSaaSApp=")
                     .append(context.getSequenceConfig().getApplicationConfig().isSaaSApp());
         } catch (UnsupportedEncodingException e) {
             throw new FrameworkException("Error while URL Encoding", e);
@@ -1164,5 +1202,50 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
         } catch (UserStoreException e) {
             throw new FrameworkException("Error occurred while retrieving claim: " + claimURI, e);
         }
+    }
+
+    private void setStepConfigAuthenticatorList(SequenceConfig effectiveSequence) {
+
+        Map<Integer, StepConfig> stepMap = effectiveSequence.getStepMap();
+        ApplicationConfig applicationConfig = effectiveSequence.getApplicationConfig();
+        if (MapUtils.isEmpty(stepMap) && applicationConfig == null) {
+            return;
+        }
+        ServiceProviderProperty[] spProperties = applicationConfig.getServiceProvider().getSpProperties();
+        boolean showOrganizationAuthenticator = true;
+        for (ServiceProviderProperty property : spProperties) {
+            if (IS_APP_SHARED.equals(property.getName()) && !Boolean.parseBoolean(property.getValue())) {
+                showOrganizationAuthenticator = false;
+                break;
+            }
+        }
+        if (showOrganizationAuthenticator) {
+            return;
+        }
+        StepConfig stepConfig = stepMap.get(1);
+        if (stepConfig == null) {
+            return;
+        }
+        List<AuthenticatorConfig> authenticatorList = stepConfig.getAuthenticatorList();
+        authenticatorList = authenticatorList.stream()
+                .filter(authenticatorConfig -> !authenticatorConfig.getName()
+                        .equals(ORGANIZATION_AUTHENTICATOR)).collect(Collectors.toList());
+        stepConfig.setAuthenticatorList(authenticatorList);
+    }
+
+    private boolean isStepHasMultiOption(AuthenticationContext context) {
+
+        SequenceConfig sequenceConfig = context.getSequenceConfig();
+
+        if (sequenceConfig != null) {
+            Map<Integer, StepConfig> stepMap = sequenceConfig.getStepMap();
+
+            if (stepMap != null) {
+                StepConfig stepConfig = stepMap.get(context.getCurrentStep());
+
+                return stepConfig != null && stepConfig.isMultiOption();
+            }
+        }
+        return false;
     }
 }
