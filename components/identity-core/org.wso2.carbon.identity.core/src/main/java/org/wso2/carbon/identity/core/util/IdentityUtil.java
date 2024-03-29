@@ -1792,9 +1792,27 @@ public class IdentityUtil {
             try {
                 return IdentityUtil.resolveUserIdFromUsername(tenantId, userStoreDomain, username);
             } catch (IdentityException e) {
-                log.error("Error occurred while resolving Id for the user: " + username);
+                // Below log is changed to a debug log hence the exception is not thrown
+                // from the upper layer and handled gracefully.
+                log.debug("Error occurred while resolving Id for the user: " + username);
             }
         }
         return userId;
+    }
+
+    /**
+     * Read the SCIM User Endpoint Maximum Items Per Page is enabled config and returns it.
+     *
+     * @return If SCIM User Endpoint Maximum Items Per Page is enabled.
+     */
+    public static boolean isSCIM2UserMaxItemsPerPageEnabled() {
+
+        String scim2UserMaxItemsPerPageEnabledProperty =
+                IdentityUtil.getProperty(IdentityCoreConstants.SCIM2_USER_MAX_ITEMS_PER_PAGE_ENABLED);
+
+        if (StringUtils.isBlank(scim2UserMaxItemsPerPageEnabledProperty)) {
+            return true;
+        }
+        return Boolean.parseBoolean(scim2UserMaxItemsPerPageEnabledProperty);
     }
 }

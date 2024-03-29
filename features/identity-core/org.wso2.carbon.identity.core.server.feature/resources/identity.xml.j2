@@ -1417,6 +1417,14 @@
         -->
         <ConsiderTotalRecordsForTotalResultOfLDAP>{{scim2.consider_total_records_for_total_results_of_ldap}}</ConsiderTotalRecordsForTotalResultOfLDAP>
 
+        <!--
+             If you want to remove the limit set for the count query parameter of SCIM2 Users Endpoint then disable this
+             property value.
+
+             Default value : true
+             Supported versions : IS 7.0.0 onwards
+        -->
+        <UserEndpointMaxItemsPerPageEnabled>{{scim2.user_endpoint_max_items_per_page.enable}}</UserEndpointMaxItemsPerPageEnabled>
     </SCIM2>
 
       <PasswordPolicy>
@@ -2027,6 +2035,24 @@
                        name="org.wso2.carbon.identity.auth.service.handler.impl.ClientCertificateBasedAuthenticationHandler"
                        orderId="{{event.default_listener.client_certificate_authentication_handler.priority}}"
                        enable="{{event.default_listener.client_certificate_authentication_handler.enable}}"/>
+
+        <!-- New V2 Audit Loggers-->
+         <EventListener id="user_management_v2_audit_logger"
+                               type="org.wso2.carbon.user.core.listener.UserOperationEventListener"
+                               name="org.wso2.carbon.user.mgt.listeners.UserManagementV2AuditLogger"
+                               orderId="{{event.default_listener.user_management_v2_audit_logger.priority}}"
+                               enable="{{event.default_listener.user_management_v2_audit_logger.enable}}"/>
+          <EventListener id="role_management_v2_audit_logger"
+                                type="org.wso2.carbon.identity.role.v2.mgt.core.listener"
+                                name="org.wso2.carbon.identity.role.v2.mgt.core.listener.RoleManagementV2AuditLogger"
+                                orderId="{{event.default_listener.role_management_v2_audit_logger.priority}}"
+                                enable="{{event.default_listener.role_management_v2_audit_logger.enable}}"/>
+
+          <EventListener id="group_management_v2_audit_logger"
+                                         type="org.wso2.carbon.user.core.listener.GroupOperationEventListener"
+                                         name="org.wso2.carbon.user.mgt.listeners.GroupManagementV2AuditLogger"
+                                         orderId="{{event.default_listener.group_management_v2_audit_logger.priority}}"
+                                         enable="{{event.default_listener.group_management_v2_audit_logger.enable}}"/>
 
         <!-- B2B organization management Event Listeners -->
         <EventListener id="fragment_app_mgt_listener"
@@ -2843,19 +2869,19 @@
             <Permissions>/permission/admin/manage/identity/claimmgt/metadata/delete</Permissions>
             <Scopes>internal_claim_meta_delete</Scopes>
         </Resource>
-        <Resource context="(.*)/api/server/v1/email/template-types(.*)" secured="true" http-method="GET">
+        <Resource context="(.*)/api/server/v(.*)/email/template-types(.*)" secured="true" http-method="GET">
             <Permissions>/permission/admin/manage/identity/emailmgt/view</Permissions>
             <Scopes>internal_email_mgt_view</Scopes>
         </Resource>
-        <Resource context="(.*)/api/server/v1/email/template-types(.*)" secured="true" http-method="POST">
+        <Resource context="(.*)/api/server/v(.*)/email/template-types(.*)" secured="true" http-method="POST">
             <Permissions>/permission/admin/manage/identity/emailmgt/create</Permissions>
             <Scopes>internal_email_mgt_create</Scopes>
         </Resource>
-        <Resource context="(.*)/api/server/v1/email/template-types/(.*)" secured="true" http-method="PUT">
+        <Resource context="(.*)/api/server/v(.*)/email/template-types/(.*)" secured="true" http-method="PUT">
             <Permissions>/permission/admin/manage/identity/emailmgt/update</Permissions>
             <Scopes>internal_email_mgt_update</Scopes>
         </Resource>
-        <Resource context="(.*)/api/server/v1/email/template-types/(.*)" secured="true" http-method="DELETE">
+        <Resource context="(.*)/api/server/v(.*)email/template-types/(.*)" secured="true" http-method="DELETE">
             <Permissions>/permission/admin/manage/identity/emailmgt/delete</Permissions>
             <Scopes>internal_email_mgt_delete</Scopes>
         </Resource>
@@ -3956,5 +3982,10 @@
     </APIResponse>
 
     <SuperTenantAliasInPublicUrl>{{super_tenant.alias_in_public_url}}</SuperTenantAliasInPublicUrl>
+
+    {% if legacy_claims.allow_legacy_role_claim_behaviour is defined %}
+    <!-- Config to allow legacy roles claim behaviors -->
+    <AllowLegacyRoleClaimBehaviour>{{legacy_claims.allow_legacy_role_claim_behaviour}}</AllowLegacyRoleClaimBehaviour>
+    {% endif %}
 
 </Server>

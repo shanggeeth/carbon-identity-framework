@@ -968,7 +968,14 @@
           Supported versions : IS 5.10.0 onwards
         -->
         <!--<ConsiderTotalRecordsForTotalResultOfLDAP>false</ConsiderTotalRecordsForTotalResultOfLDAP>-->
+        <!--
+             If you want to remove the limit set for the count query parameter of SCIM2 Users Endpoint then disable this
+             property value.
 
+             Default value : true
+             Supported versions : IS 7.0.0 onwards
+        -->
+        <UserEndpointMaxItemsPerPageEnabled>true</UserEndpointMaxItemsPerPageEnabled>
     </SCIM2>
 
     <!--Recovery>
@@ -1292,6 +1299,20 @@
         <EventListener type="org.wso2.carbon.user.core.listener.UserManagementErrorEventListener"
                        name="org.wso2.carbon.identity.provisioning.listener.ProvisioningErrorListener"
                        orderId="1" enable="false"/>
+
+        <!-- New V2 Audit Loggers-->
+        <EventListener type="org.wso2.carbon.user.core.listener.UserOperationEventListener"
+                       name="org.wso2.carbon.user.mgt.listeners.UserManagementV2AuditLogger"
+                       orderId="150" enable="true"/>
+
+        <EventListener type="org.wso2.carbon.user.core.listener.GroupOperationEventListener"
+                       name="org.wso2.carbon.user.mgt.listeners.GroupManagementV2AuditLogger"
+                       orderId="10" enable="true"/>
+
+        <EventListener type="org.wso2.carbon.identity.role.v2.mgt.core.listener"
+                       name="org.wso2.carbon.identity.role.v2.mgt.core.listener.RoleManagementV2AuditLogger"
+                       orderId="3" enable="true"/>
+
 
         <!-- B2B organization management Event Listeners -->
         <EventListener id="fragment_app_mgt_listener"
@@ -1820,19 +1841,19 @@
             <Permissions>/permission/admin/manage/identity/claimmgt/metadata/delete</Permissions>
             <Scopes>internal_claim_meta_delete</Scopes>
         </Resource>
-        <Resource context="(.*)/api/server/v1/email/template-types(.*)" secured="true" http-method="GET">
+        <Resource context="(.*)/api/server/v(.*)/email/template-types(.*)" secured="true" http-method="GET">
             <Permissions>/permission/admin/manage/identity/emailmgt/view</Permissions>
             <Scopes>internal_email_mgt_view</Scopes>
         </Resource>
-        <Resource context="(.*)/api/server/v1/email/template-types(.*)" secured="true" http-method="POST">
+        <Resource context="(.*)/api/server/v(.*)/email/template-types(.*)" secured="true" http-method="POST">
             <Permissions>/permission/admin/manage/identity/emailmgt/create</Permissions>
             <Scopes>internal_email_mgt_create</Scopes>
         </Resource>
-        <Resource context="(.*)/api/server/v1/email/template-types/(.*)" secured="true" http-method="PUT">
+        <Resource context="(.*)/api/server/v(.*)/email/template-types/(.*)" secured="true" http-method="PUT">
             <Permissions>/permission/admin/manage/identity/emailmgt/update</Permissions>
             <Scopes>internal_email_mgt_update</Scopes>
         </Resource>
-        <Resource context="(.*)/api/server/v1/email/template-types/(.*)" secured="true" http-method="DELETE">
+        <Resource context="(.*)/api/server/v(.*)/email/template-types/(.*)" secured="true" http-method="DELETE">
             <Permissions>/permission/admin/manage/identity/emailmgt/delete</Permissions>
             <Scopes>internal_email_mgt_delete</Scopes>
         </Resource>
