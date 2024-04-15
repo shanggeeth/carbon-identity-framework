@@ -179,7 +179,6 @@ public class RegistrationFrameworkUtils {
 
         context.setServiceProvider(sp);
         context.setRegistrationSequence(sequence);
-
     }
 
     private static String getTenantDomain(HttpServletRequest request) throws RegistrationFrameworkException {

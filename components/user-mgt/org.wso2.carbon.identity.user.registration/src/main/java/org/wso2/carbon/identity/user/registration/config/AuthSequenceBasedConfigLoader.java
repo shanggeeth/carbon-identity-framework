@@ -70,7 +70,7 @@ public class AuthSequenceBasedConfigLoader {
         sequenceConfig.setApplicationId(serviceProvider.getApplicationName());
         sequenceConfig.setFlowDefinition(RegistrationFlowConstants.DEFAULT_FLOW_DEFINITION);
 
-        if (authenticationSteps == null) {
+        if (authenticationSteps == null || authenticationSteps.length == 0) {
             return sequenceConfig;
         }
 
