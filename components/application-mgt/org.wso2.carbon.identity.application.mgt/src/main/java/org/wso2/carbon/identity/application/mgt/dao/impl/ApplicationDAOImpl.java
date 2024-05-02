@@ -150,6 +150,8 @@ import static org.wso2.carbon.identity.application.common.util.IdentityApplicati
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_API_BASED_AUTHENTICATION_ENABLED_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_ATTESTATION_ENABLED_DISPLAY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_ATTESTATION_ENABLED_PROPERTY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED_DISPLAY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_B2B_SS_APP_SP_PROPERTY_DISPLAY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_B2B_SS_APP_SP_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_MANAGEMENT_APP_SP_PROPERTY_DISPLAY_NAME;
@@ -452,6 +454,10 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             ServiceProviderProperty isAPIBasedAuthenticationEnabled
                     = buildIsAPIBasedAuthenticationEnabledProperty(application);
             serviceProviderProperties.add(isAPIBasedAuthenticationEnabled);
+
+            ServiceProviderProperty isAuthSeqBasedSignupEnabled
+                    = buildIsAuthSeqBasedSignupEnabledProperty(application);
+            serviceProviderProperties.add(isAuthSeqBasedSignupEnabled);
 
             if (application.getClientAttestationMetaData() != null) {
                 ServiceProviderProperty isAttestationEnabled =
@@ -2175,6 +2181,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             serviceProvider.setManagementApp(getIsManagementApp(propertyList));
             serviceProvider.setB2BSelfServiceApp(getIsB2BSSApp(propertyList));
             serviceProvider.setAPIBasedAuthenticationEnabled(getIsAPIBasedAuthenticationEnabled(propertyList));
+            serviceProvider.setAuthSequenceBasedSignupEnabled(getIsAuthSeqBasedSignupEnabled(propertyList));
             ClientAttestationMetaData clientAttestationMetaData = new ClientAttestationMetaData();
             clientAttestationMetaData.setAttestationEnabled(getIsAttestationEnabled(propertyList));
             clientAttestationMetaData.setAndroidPackageName(getAndroidPackageName(propertyList));
@@ -2394,6 +2401,16 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
         String value = propertyList.stream()
                 .filter(property -> IS_API_BASED_AUTHENTICATION_ENABLED_PROPERTY_NAME.equals(property.getName()))
+                .findFirst()
+                .map(ServiceProviderProperty::getValue)
+                .orElse(StringUtils.EMPTY);
+        return Boolean.parseBoolean(value);
+    }
+
+    private boolean getIsAuthSeqBasedSignupEnabled(List<ServiceProviderProperty> propertyList) {
+
+        String value = propertyList.stream()
+                .filter(property -> IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED_PROPERTY_NAME.equals(property.getName()))
                 .findFirst()
                 .map(ServiceProviderProperty::getValue)
                 .orElse(StringUtils.EMPTY);
@@ -5056,6 +5073,9 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         ServiceProviderProperty isAPIBasedAuthenticationEnabled = buildIsAPIBasedAuthenticationEnabledProperty(sp);
         spPropertyMap.put(isAPIBasedAuthenticationEnabled.getName(), isAPIBasedAuthenticationEnabled);
 
+        ServiceProviderProperty isAuthSeqBasedSignupEnabled = buildIsAuthSeqBasedSignupEnabledProperty(sp);
+        spPropertyMap.put(isAuthSeqBasedSignupEnabled.getName(), isAuthSeqBasedSignupEnabled);
+
         if (sp.getClientAttestationMetaData() != null) {
             ServiceProviderProperty isAttestationEnabled =
                     buildIsAttestationEnabledProperty(sp.getClientAttestationMetaData());
@@ -5081,6 +5101,15 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         isAPIBasedAuthenticationEnabled.setName(IS_API_BASED_AUTHENTICATION_ENABLED_PROPERTY_NAME);
         isAPIBasedAuthenticationEnabled.setDisplayName(IS_API_BASED_AUTHENTICATION_ENABLED_DISPLAY_NAME);
         isAPIBasedAuthenticationEnabled.setValue(String.valueOf(sp.isAPIBasedAuthenticationEnabled()));
+        return isAPIBasedAuthenticationEnabled;
+    }
+
+    private ServiceProviderProperty buildIsAuthSeqBasedSignupEnabledProperty(ServiceProvider sp) {
+
+        ServiceProviderProperty isAPIBasedAuthenticationEnabled = new ServiceProviderProperty();
+        isAPIBasedAuthenticationEnabled.setName(IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED_PROPERTY_NAME);
+        isAPIBasedAuthenticationEnabled.setDisplayName(IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED_DISPLAY_NAME);
+        isAPIBasedAuthenticationEnabled.setValue(String.valueOf(sp.isAuthSequenceBasedSignupEnabled()));
         return isAPIBasedAuthenticationEnabled;
     }
 

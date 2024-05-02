@@ -55,6 +55,7 @@ public class ServiceProvider implements Serializable {
     private static final String IS_B2B_SELF_SERVICE_APP = "IsB2BSelfServiceApp";
     private static final String ASSOCIATED_ROLES_CONFIG = "AssociatedRolesConfig";
     private static final String IS_API_BASED_AUTHENTICATION_ENABLED = "IsAPIBasedAuthenticationEnabled";
+    private static final String IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED = "IsAuthSequenceBasedSignupEnabled";
 
     @XmlTransient
     @JsonIgnore
@@ -146,6 +147,10 @@ public class ServiceProvider implements Serializable {
     private boolean isAPIBasedAuthenticationEnabled;
 
     @IgnoreNullElement
+    @XmlElement(name = IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED)
+    private boolean isAuthSequenceBasedSignupEnabled;
+
+    @IgnoreNullElement
     @XmlElement(name = "ClientAttestationMetaData")
     private ClientAttestationMetaData clientAttestationMetaData;
 
@@ -201,6 +206,9 @@ public class ServiceProvider implements Serializable {
             } else if (IS_API_BASED_AUTHENTICATION_ENABLED.equals(elementName)) {
                 boolean isAPIBasedAuthEnabled = element.getText() != null && "true".equals(element.getText());
                 serviceProvider.setAPIBasedAuthenticationEnabled(isAPIBasedAuthEnabled);
+            } else if (IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED.equals(elementName)) {
+                boolean isAuthSeqBasedSignupEnabled = element.getText() != null && "true".equals(element.getText());
+                serviceProvider.setAuthSequenceBasedSignupEnabled(isAuthSeqBasedSignupEnabled);
             } else if ("ClientAttestationMetaData".equals(elementName)) {
                 // build client attestation meta data configuration.
                 serviceProvider
@@ -596,6 +604,16 @@ public class ServiceProvider implements Serializable {
     public ClientAttestationMetaData getClientAttestationMetaData() {
 
         return clientAttestationMetaData;
+    }
+
+    public boolean isAuthSequenceBasedSignupEnabled() {
+
+        return isAuthSequenceBasedSignupEnabled;
+    }
+
+    public void setAuthSequenceBasedSignupEnabled(boolean authSequenceBasedSignupEnabled) {
+
+        isAuthSequenceBasedSignupEnabled = authSequenceBasedSignupEnabled;
     }
 
     public void setClientAttestationMetaData(ClientAttestationMetaData clientAttestationMetaData) {
