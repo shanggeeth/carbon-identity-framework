@@ -725,7 +725,8 @@ public class DefaultStepHandler implements StepHandler {
             AuthenticatorFlowStatus status;
             if (authenticator.canHandleAutoLogin(request, context)) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug(authenticator.getName() + " can handle auto login");
+                    LOG.debug("This is self registered user. " + authenticator.getName() + " is already engaged " +
+                                      "during registration.");
                 }
                 status = AuthenticatorFlowStatus.SUCCESS_COMPLETED;
             } else {
