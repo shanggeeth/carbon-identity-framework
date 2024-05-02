@@ -29,7 +29,6 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.user.registration.AttributeCollectionRegStepExecutor;
-import org.wso2.carbon.identity.user.registration.PasswordOnboardingRegStepExecutor;
 import org.wso2.carbon.identity.user.registration.RegistrationStepExecutor;
 import org.wso2.carbon.identity.user.registration.UserRegistrationFlowService;
 import org.wso2.carbon.identity.user.registration.UserRegistrationFlowServiceImpl;
@@ -60,9 +59,6 @@ public class UserRegistrationDSComponent {
 
         bundleContext.registerService(RegistrationStepExecutor.class.getName(),
                 AttributeCollectionRegStepExecutor.getInstance(), null);
-
-        bundleContext.registerService(RegistrationStepExecutor.class.getName(),
-                PasswordOnboardingRegStepExecutor.getInstance(), null);
     }
 
     @Deactivate

@@ -23,20 +23,13 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.base.MultitenantConstants;
-import org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator;
-import org.wso2.carbon.identity.application.authentication.framework.AuthenticationFlowHandler;
-import org.wso2.carbon.identity.application.authentication.framework.config.model.AuthenticatorConfig;
-import org.wso2.carbon.identity.application.authentication.framework.config.model.SequenceConfig;
-import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
 import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
-import org.wso2.carbon.identity.application.authentication.framework.internal.FrameworkServiceComponent;
 import org.wso2.carbon.identity.application.authentication.framework.util.AutoLoginAssertionUtils;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.common.IdentityApplicationManagementClientException;
 import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
-import org.wso2.carbon.identity.application.common.util.IdentityApplicationManagementUtil;
 import org.wso2.carbon.identity.application.mgt.ApplicationConstants;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataHandler;
@@ -60,11 +53,9 @@ import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.api.UserStoreManager;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
 import org.wso2.carbon.user.core.service.RealmService;
+import org.wso2.carbon.user.mgt.common.DefaultPasswordGenerator;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
@@ -107,15 +98,15 @@ public class RegistrationFrameworkUtils {
     public static String createUser(RegistrationRequestedUser user, String tenantDomain) throws RegistrationFrameworkException {
 
         UserStoreManager userStoreManager = getUserstoreManager(tenantDomain);
+
         Map<String, String> claims = new HashMap<>();
-
-        claims.put("http://wso2.org/claims/username", user.getUsername());
-
         claims.putAll(user.getClaims());
 
-        String password = "randomPassword";
+        String password;
         if (!user.isPasswordless()) {
             password = user.getCredential();
+        } else {
+            password = String.valueOf(new DefaultPasswordGenerator().generatePassword());
         }
         try {
             userStoreManager
@@ -147,6 +138,9 @@ public class RegistrationFrameworkUtils {
 
         ServiceProvider sp = retrieveSpFromAppId(appId, tenantDomain);
 
+        if (!sp.isAuthSequenceBasedSignupEnabled()) {
+            throw new RegistrationFrameworkException("Auth sequence based signup is not enabled for the application: " + appId);
+        }
         updateContext(context, sp);
 
         return context;
@@ -175,7 +169,7 @@ public class RegistrationFrameworkUtils {
         context.setCurrentStep(0);
 
         RegistrationSequence sequence =
-                AuthSequenceBasedConfigLoader.getInstance().deriveRegSequenceFromServiceProvider(sp);
+                AuthSequenceBasedConfigLoader.getInstance().loadRegistrationSequence(sp);
 
         context.setServiceProvider(sp);
         context.setRegistrationSequence(sequence);

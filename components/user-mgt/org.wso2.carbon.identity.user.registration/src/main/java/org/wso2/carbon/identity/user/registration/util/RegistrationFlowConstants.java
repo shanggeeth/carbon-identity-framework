@@ -30,6 +30,13 @@ public class RegistrationFlowConstants {
         FAILED
     }
 
+    public enum RegistrationExecutorType {
+
+        ATTRIBUTE, // Indicates the registration executor is an attribute collector.
+        CREDENTIAL, // Indicates the registration executor is a credential collector.
+        VERIFIER, // Indicates the registration executor is a verifier.
+    }
+
     public enum RegistrationExecutorBindingType {
 
         NONE, // Indicates there is no binding.
@@ -65,7 +72,7 @@ public class RegistrationFlowConstants {
      */
     public enum StepType {
 
-        SINGLE_OPTION, MULTI_OPTION,
+        SINGLE_OPTION, MULTI_OPTION, AGGREGATED_TASKS
     }
 
     /**
@@ -81,6 +88,6 @@ public class RegistrationFlowConstants {
      */
     public enum StepStatus {
 
-        NOT_STARTED, COMPLETE, INCOMPLETE, SELECTION_PENDING, USER_INPUT_REQUIRED
+        NOT_STARTED, COMPLETE, SELECTION_PENDING, USER_INPUT_REQUIRED, AGGREGATED_TASKS_PENDING, NOT_HANDLED
     }
 }

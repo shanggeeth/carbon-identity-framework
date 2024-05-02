@@ -44,10 +44,10 @@ import java.util.List;
 /**
  * This class is responsible for loading the authentication sequence based on the login sequence of the application.
  */
-public class AuthSequenceBasedConfigLoader {
+public class AuthSequenceBasedConfigLoader implements RegistrationSequenceLoader {
 
     private static final Log LOG = LogFactory.getLog(AuthSequenceBasedConfigLoader.class);
-    private static AuthSequenceBasedConfigLoader instance = new AuthSequenceBasedConfigLoader();
+    private static final AuthSequenceBasedConfigLoader instance = new AuthSequenceBasedConfigLoader();
 
     private AuthSequenceBasedConfigLoader() {
 
@@ -58,7 +58,8 @@ public class AuthSequenceBasedConfigLoader {
         return instance;
     }
 
-    public RegistrationSequence deriveRegSequenceFromServiceProvider(ServiceProvider serviceProvider) throws RegistrationFrameworkException {
+    @Override
+    public RegistrationSequence loadRegistrationSequence(ServiceProvider serviceProvider) throws RegistrationFrameworkException {
 
         if (serviceProvider == null) {
             throw new RegistrationFrameworkException("ServiceProvider cannot be null.");
@@ -74,30 +75,22 @@ public class AuthSequenceBasedConfigLoader {
             return sequenceConfig;
         }
 
-        // for each configured step. We are considering only the first step at the moment.
-//        for (AuthenticationStep authenticationStep : authenticationSteps) {
-//
-//            // loading local authenticators
-//            RegistrationStep stepConfig = loadExecutors(authenticationStep);
-//
-//            if (stepConfig != null) {
-//                stepConfig.setStatus(NOT_STARTED);
-//                stepConfig.setOrder(++stepOrder);
-//                sequenceConfig.getStepMap().put(stepConfig.getOrder(), stepConfig);
-//            }
-//        }
-        AuthenticationStep firstStep = authenticationSteps[0];
+        // For each authentication step, consider the registration supported steps.
+        for (AuthenticationStep authenticationStep : authenticationSteps) {
 
-        // Load registration executors based on the authenticators.
-        RegistrationStep stepConfig = loadExecutors(firstStep, serviceProvider.getTenantDomain());
-
-        if (stepConfig != null) {
-            sequenceConfig.addStepDefinition(stepConfig);
+            RegistrationStep stepConfig = loadExecutors(authenticationStep, serviceProvider.getTenantDomain());
+            if (stepConfig != null) {
+                sequenceConfig.addStepDefinition(stepConfig);
+            }
         }
-        RegistrationStep attributeCollectStep = deriveAttributeCollectionStep(serviceProvider);
 
-        if (attributeCollectStep != null) {
-            sequenceConfig.addStepDefinition(attributeCollectStep);
+        RegistrationStepExecutorConfig attributeCollectorConfig = deriveAttributeCollectionStep(serviceProvider);
+
+        if (attributeCollectorConfig != null) {
+            // Include the attribute collection as a mandatory task for the first step.
+            RegistrationStep firstStep = sequenceConfig.getStepDefinitions().get(0);
+            firstStep.addConfiguredExecutor(attributeCollectorConfig);
+            firstStep.setType(RegistrationFlowConstants.StepType.AGGREGATED_TASKS);
         }
         return sequenceConfig;
     }
@@ -163,8 +156,13 @@ public class AuthSequenceBasedConfigLoader {
         }
         RegistrationStep stepConfig = new RegistrationStep();
         stepConfig.setConfiguredExecutors(executorConfigs);
+        // If there is only one executor, that is a mandatory step.
+        if (executorConfigs.size() == 1) {
+            executorConfigs.get(0).setOptional(false);
+            stepConfig.setSelectedExecutor(executorConfigs.get(0));
+        }
         if (executorConfigs.size() > 1) {
-            stepConfig.setMultiOption(true);
+            stepConfig.setType(RegistrationFlowConstants.StepType.MULTI_OPTION);
         }
         return stepConfig;
     }
@@ -195,7 +193,7 @@ public class AuthSequenceBasedConfigLoader {
         return regStepConfig;
     }
 
-    private RegistrationStep deriveAttributeCollectionStep(ServiceProvider serviceProvider) {
+    private RegistrationStepExecutorConfig deriveAttributeCollectionStep(ServiceProvider serviceProvider) {
 
         ClaimMapping[] requestedClaims = serviceProvider.getClaimConfig().getClaimMappings();
 
@@ -207,15 +205,7 @@ public class AuthSequenceBasedConfigLoader {
         config.setId("AttributeCollectorBasedOnAppClaims");
         config.setRequestedClaims(requestedClaims);
         config.setExecutor(getRegStepExecutor("AttributeCollector"));
-
-        List<RegistrationStepExecutorConfig> executors = new ArrayList<>();
-        executors.add(config);
-
-        RegistrationStep step = new RegistrationStep();
-        step.setMultiOption(false);
-        step.setSelectedExecutor(null);
-        step.setConfiguredExecutors(executors);
-
-        return step;
+        config.setOptional(false);
+        return config;
     }
 }

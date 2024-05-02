@@ -25,7 +25,7 @@ import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants
  */
 public class RegistrationStepResult {
 
-    private RegistrationFlowConstants.StepStatus status = RegistrationFlowConstants.StepStatus.INCOMPLETE;
+    private RegistrationFlowConstants.StepStatus status = RegistrationFlowConstants.StepStatus.NOT_STARTED;
     private Message message;
     private ExecutorResponse response;
 

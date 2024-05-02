@@ -34,6 +34,7 @@ public class RegistrationStepExecutorConfig {
     private String name;
     private RegistrationStepExecutor executor;
     private IdentityProvider identityProvider;
+    private boolean isOptional = true;
     private Map<String, String> authenticatorProperties = new HashMap<>();
     private ClaimMapping[] requestedClaims;
 
@@ -95,5 +96,15 @@ public class RegistrationStepExecutorConfig {
     public void setRequestedClaims(ClaimMapping[] requestedClaims) {
 
         this.requestedClaims = requestedClaims;
+    }
+
+    public boolean isOptional() {
+
+        return isOptional;
+    }
+
+    public void setOptional(boolean optional) {
+
+        isOptional = optional;
     }
 }

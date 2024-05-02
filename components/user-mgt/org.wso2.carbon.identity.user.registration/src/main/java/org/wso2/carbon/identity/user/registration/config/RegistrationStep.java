@@ -29,7 +29,7 @@ public class RegistrationStep implements Serializable {
 
     private static final long serialVersionUID = -6352819516789400021L;
     private String id;
-    private boolean isMultiOption;
+    private RegistrationFlowConstants.StepType type;
     private RegistrationStepExecutorConfig selectedExecutor;
     private List<RegistrationStepExecutorConfig> configuredExecutors = new ArrayList<>();
 
@@ -46,16 +46,6 @@ public class RegistrationStep implements Serializable {
     public void setId(String id) {
 
         this.id = id;
-    }
-
-    public boolean isMultiOption() {
-
-        return isMultiOption;
-    }
-
-    public void setMultiOption(boolean multiOption) {
-
-        isMultiOption = multiOption;
     }
 
     public RegistrationStepExecutorConfig getSelectedExecutor() {
@@ -76,5 +66,20 @@ public class RegistrationStep implements Serializable {
     public void setConfiguredExecutors(List<RegistrationStepExecutorConfig> configuredExecutors) {
 
         this.configuredExecutors = configuredExecutors;
+    }
+
+    public void addConfiguredExecutor(RegistrationStepExecutorConfig configuredExecutor) {
+
+        this.configuredExecutors.add(configuredExecutor);
+    }
+
+    public RegistrationFlowConstants.StepType getType() {
+
+        return type;
+    }
+
+    public void setType(RegistrationFlowConstants.StepType type) {
+
+        this.type = type;
     }
 }

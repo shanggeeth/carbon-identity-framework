@@ -26,23 +26,26 @@ import org.wso2.carbon.identity.application.authentication.framework.util.Framew
 import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
 import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecutorConfig;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.registration.model.EngagedExecutor;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
-import org.wso2.carbon.identity.user.registration.model.response.ExecutorMetadata;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
+import org.wso2.carbon.identity.user.registration.model.response.Message;
 import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
-import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFrameworkUtils;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.RegistrationExecutorBindingType.AUTHENTICATOR;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.AGGREGATED_TASKS_PENDING;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.COMPLETE;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.SELECTION_PENDING;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.AGGREGATED_TASKS;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.MULTI_OPTION;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.SINGLE_OPTION;
 
@@ -59,36 +62,112 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
     @Override
     public NextStepResponse handle(RegistrationRequest request, RegistrationContext context) throws RegistrationFrameworkException {
 
+        boolean allStepExecutorsEngaged = false;
         RegistrationStep step = context.getRegistrationSequence().getStepDefinitions().get(context.getCurrentStep());
+        List<RegistrationStepExecutorConfig> regExecutorConfigs = step.getConfiguredExecutors();
+        List<EngagedExecutor> engagedExecutors = request.getEngagedExecutors();
 
         NextStepResponse stepResponse = new NextStepResponse();
-        stepResponse.setType(SINGLE_OPTION);
+        stepResponse.setType(step.getType());
 
-        if (step.getSelectedExecutor() == null) {
-            List<RegistrationStepExecutorConfig> regExecutors = step.getConfiguredExecutors();
-            if (regExecutors.size() == 1) {
-                step.setSelectedExecutor(regExecutors.get(0));
-                context.setCurrentStepStatus(NOT_STARTED);
-            } else {
-                // Handling multi option steps.
-                if (SELECTION_PENDING.equals(context.getCurrentStepStatus())) {
-                    // It is expected to an executor to be selected in order to continue the registration.
-                    RegistrationStepExecutorConfig selectedExecutor = resolveSelectedExecutor(regExecutors, request);
-                    step.setSelectedExecutor(selectedExecutor);
-                    // Once an executor is selected, it can be considered as a single option and start the flow.
-                    stepResponse.setType(SINGLE_OPTION);
-                    context.setCurrentStepStatus(NOT_STARTED);
-                } else {
-                     context.setCurrentStepStatus(SELECTION_PENDING);
-                    stepResponse.setType(MULTI_OPTION);
-                    stepResponse.setExecutors(loadMultiOptionsForStep(context, regExecutors));
-                    // Further processing of the step is not possible without selecting an executor.
-                    return stepResponse;
+        RegistrationFlowConstants.StepStatus status = context.getCurrentStepStatus();
+
+        if (status == null) {
+            context.setCurrentStepStatus(NOT_STARTED);
+        }
+
+        if (RegistrationFlowConstants.StepType.MULTI_OPTION.equals(step.getType())) {
+            // Handling multi option steps.
+            if (SELECTION_PENDING.equals(context.getCurrentStepStatus())) {
+                // It is expected to an executor to be selected in order to continue the registration.
+                if (!(request.getEngagedExecutors().size() == 1)) {
+                    throw new RegistrationFrameworkException("Only one registration executor can be selected.");
                 }
+                EngagedExecutor executor = request.getEngagedExecutors().get(0);
+                RegistrationStepExecutorConfig selectedExecutor = resolveSelectedExecutor(executor.getId(),
+                                                                                          regExecutorConfigs);
+                step.setSelectedExecutor(selectedExecutor);
+                // Once an executor is selected, it can be considered as a single option and start the flow.
+                stepResponse.setType(SINGLE_OPTION);
+                context.setCurrentStepStatus(NOT_STARTED);
+                callRegistrationStepExecutor(context, executor.getInputs(), step.getSelectedExecutor(), stepResponse);
+            } else {
+                context.setCurrentStepStatus(SELECTION_PENDING);
+                loadMultiOptionsForStep(context, stepResponse, regExecutorConfigs);
+                stepResponse.setType(MULTI_OPTION);
+
+                Message message = new Message();
+                message.setType(RegistrationFlowConstants.MessageType.INFO);
+                message.setMessage("Select an option to proceed the registration.");
+                stepResponse.addMessage(message);
+                // Further processing of the step is not possible without selecting an executor.
+                return stepResponse;
             }
         }
 
-        RegistrationStepExecutorConfig regExecutor = step.getSelectedExecutor();
+        if (step.getConfiguredExecutors().size() == 1) {
+            step.setSelectedExecutor(step.getConfiguredExecutors().get(0));
+            if (!(request.getEngagedExecutors().size() == 1)) {
+                throw new RegistrationFrameworkException("Only one registration executor is expected.");
+            }
+            EngagedExecutor executor = request.getEngagedExecutors().get(0);
+            callRegistrationStepExecutor(context, executor.getInputs(), step.getSelectedExecutor(), stepResponse);
+        }
+
+        if (RegistrationFlowConstants.StepType.AGGREGATED_TASKS.equals(step.getType())) {
+
+            // Handling aggregated.
+            if (AGGREGATED_TASKS_PENDING.equals(context.getCurrentStepStatus())) {
+                validateUserInputs(context, request, regExecutorConfigs,stepResponse);
+            } else {
+                loadMultiOptionsForStep(context, stepResponse, regExecutorConfigs);
+                stepResponse.setType(AGGREGATED_TASKS);
+                context.setCurrentStepStatus(AGGREGATED_TASKS_PENDING);
+
+                Message message = new Message();
+                message.setType(RegistrationFlowConstants.MessageType.INFO);
+                message.setMessage("Provide inputs to proceed the registration.");
+                stepResponse.addMessage(message);
+                // Further processing of the step is not possible without selecting an executor.
+                return stepResponse;
+            }
+
+        }
+
+        return stepResponse;
+    }
+
+    private void validateUserInputs(RegistrationContext context, RegistrationRequest request,
+                                    List<RegistrationStepExecutorConfig> regExecutors, NextStepResponse response)
+            throws RegistrationFrameworkException {
+
+        int selectedAuthenticatorCount = 0;
+        boolean multipleAuthenticatorsListed = Boolean.parseBoolean(
+                String.valueOf(context.getProperty("multipleAuthenticators")));
+        
+        for (EngagedExecutor engagedExecutor : request.getEngagedExecutors()) {
+            context.setCurrentStepStatus(USER_INPUT_REQUIRED);
+            RegistrationStepExecutorConfig executorConfig = resolveSelectedExecutor(engagedExecutor.getId(), regExecutors);
+            if (executorConfig.getExecutor().getBindingType() == AUTHENTICATOR) {
+                selectedAuthenticatorCount++;
+                if (selectedAuthenticatorCount > 1) {
+                    throw new RegistrationFrameworkException("Only one authenticator should be selected.");
+                }
+                if (multipleAuthenticatorsListed) {
+                    context.setCurrentStepStatus(NOT_STARTED);
+                }
+            }
+            callRegistrationStepExecutor(context, engagedExecutor.getInputs(), executorConfig, response);
+        }
+
+        if (multipleAuthenticatorsListed && selectedAuthenticatorCount == 0) {
+            throw new RegistrationFrameworkException("At least one authenticator should be selected.");
+        }
+    }
+
+    private void callRegistrationStepExecutor(RegistrationContext context, Map<String, String> inputs,
+                                              RegistrationStepExecutorConfig regExecutor, NextStepResponse stepResponse)
+            throws RegistrationFrameworkException {
 
         if (regExecutor != null && regExecutor.getExecutor().getBindingType() == AUTHENTICATOR) {
 
@@ -104,7 +183,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
         }
 
         RegistrationFlowConstants.StepStatus stepStatus = regExecutor.getExecutor()
-                .execute(request, context, stepResponse, regExecutor);
+                .execute(inputs, context, stepResponse, regExecutor);
         // If the step is completed and an authenticator is involved, add it to the engaged authenticators list.
         if (stepStatus == COMPLETE) {
             if (AUTHENTICATOR == regExecutor.getExecutor().getBindingType()) {
@@ -112,45 +191,51 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
             }
         }
         context.setCurrentStepStatus(stepStatus);
-        return stepResponse;
     }
 
-    private RegistrationStepExecutorConfig resolveSelectedExecutor(List<RegistrationStepExecutorConfig> regExecutors,
-                                                                   RegistrationRequest request) throws RegistrationFrameworkException {
+    private RegistrationStepExecutorConfig resolveSelectedExecutor(String id, List<RegistrationStepExecutorConfig> regExecutors)
+            throws RegistrationFrameworkException {
 
-        String selectedExecutorId = request.getExecutorId();
         RegistrationStepExecutorConfig selectedExecutor = null;
         for (RegistrationStepExecutorConfig regExecutor : regExecutors) {
-            if (regExecutor.getId().equals(selectedExecutorId)) {
+            if (regExecutor.getId().equals(id)) {
                 selectedExecutor = regExecutor;
             }
         }
         if (selectedExecutor == null) {
-            throw new RegistrationFrameworkException("No valid executor found");
+            throw new RegistrationFrameworkException("No valid executor found.");
         }
         return selectedExecutor;
     }
 
-    private List<ExecutorResponse> loadMultiOptionsForStep(RegistrationContext context,
-                                                           List<RegistrationStepExecutorConfig> regExecutors) {
 
-        List<ExecutorResponse> executorResponses = new ArrayList<>();
+    private void loadMultiOptionsForStep(RegistrationContext context, NextStepResponse stepResponse,
+                                                           List<RegistrationStepExecutorConfig> regExecutors)
+            throws RegistrationFrameworkException {
+
+        int authenticatorCount = 0;
         for (RegistrationStepExecutorConfig regExecutor : regExecutors) {
-            ExecutorResponse executorResponse = new ExecutorResponse();
-            executorResponse.setName(regExecutor.getName());
-            executorResponse.setExecutorName(regExecutor.getExecutor().getName());
-            executorResponse.setId(regExecutor.getId());
-            executorResponses.add(executorResponse);
-
-            ExecutorMetadata meta = new ExecutorMetadata();
-            meta.setI18nKey("executor." + regExecutor.getName());
-
-            List<RequiredParam> params = regExecutor.getExecutor().getRequiredParams();
-            RegistrationFrameworkUtils.updateAvailableValuesForRequiredParams(context, params);
-
-            meta.setRequiredParams(params);
-            executorResponse.setMetadata(meta);
+           if (AUTHENTICATOR.equals(regExecutor.getExecutor().getBindingType())) {
+                authenticatorCount++;
+            }
+            if (authenticatorCount > 1) {
+                context.setProperty("multipleAuthenticators", true);
+                break; // Exit the loop if authenticatorCount is greater than 1
+            }
         }
-        return executorResponses;
+
+        for (RegistrationStepExecutorConfig regExecutor : regExecutors) {
+            context.setCurrentStepStatus(NOT_STARTED);
+            if (!AUTHENTICATOR.equals(regExecutor.getExecutor().getBindingType())) {
+                callRegistrationStepExecutor(context, null, regExecutor, stepResponse);
+            } else if (authenticatorCount == 1) {
+                callRegistrationStepExecutor(context, null, regExecutor, stepResponse);
+            } else {
+                ExecutorResponse executorResponse = new ExecutorResponse();
+                executorResponse.setName(regExecutor.getName());
+                executorResponse.setExecutorName(regExecutor.getExecutor().getName());
+                executorResponse.setId(regExecutor.getId());
+                stepResponse.addExecutor(executorResponse);            }
+        }
     }
 }

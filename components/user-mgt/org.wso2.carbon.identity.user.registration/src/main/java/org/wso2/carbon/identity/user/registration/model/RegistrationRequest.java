@@ -19,7 +19,9 @@
 package org.wso2.carbon.identity.user.registration.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RegistrationRequest implements Serializable {
@@ -27,8 +29,7 @@ public class RegistrationRequest implements Serializable {
     private static final long serialVersionUID = -8742948356919529312L;
 
     private String flowId;
-    private String executorId;
-    private Map<String, String> inputs = new HashMap<String, String>();
+    private List<EngagedExecutor> engagedExecutors = new ArrayList<>();
 
     public String getFlowId() {
 
@@ -40,23 +41,18 @@ public class RegistrationRequest implements Serializable {
         this.flowId = flowId;
     }
 
-    public Map<String, String> getInputs() {
+    public List<EngagedExecutor> getEngagedExecutors() {
 
-        return inputs;
+        return engagedExecutors;
     }
 
-    public void setInputs(Map<String, String> inputs) {
+    public void setEngagedExecutors(List<EngagedExecutor> engagedExecutors) {
 
-        this.inputs = inputs;
+        this.engagedExecutors = engagedExecutors;
     }
 
-    public String getExecutorId() {
+    public void addEngagedExecutor(EngagedExecutor engagedExecutor) {
 
-        return executorId;
-    }
-
-    public void setExecutorId(String executorId) {
-
-        this.executorId = executorId;
+        this.engagedExecutors.add(engagedExecutor);
     }
 }

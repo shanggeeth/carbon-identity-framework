@@ -22,7 +22,6 @@ import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecutorConfig;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
-import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequestedUser;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorMetadata;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
@@ -39,7 +38,7 @@ import java.util.Map;
 
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.RegistrationExecutorBindingType.NONE;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.COMPLETE;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.INCOMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_HANDLED;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
 import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED;
 
@@ -73,7 +72,7 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
     @Override
     public String getExecutorType() throws RegistrationFrameworkException {
 
-        return "AttributeCollectorType";
+        return RegistrationFlowConstants.RegistrationExecutorType.ATTRIBUTE.toString();
     }
 
     public List<RequiredParam> getRequiredParams() {
@@ -82,7 +81,7 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
     }
 
     @Override
-    public StepStatus execute(RegistrationRequest registrationRequest, RegistrationContext context,
+    public StepStatus execute(Map<String, String> inputs, RegistrationContext context,
                               NextStepResponse response, RegistrationStepExecutorConfig config)
             throws RegistrationFrameworkException {
 
@@ -102,8 +101,8 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
                 param.setMandatory(mapping.isMandatory());
                 param.setDataType(RegistrationFlowConstants.DataType.STRING); //TODO: Need to get the data type from the
                 param.setOrder(displayOder++);
-                param.setI18nKey("i18nKey_claim_should_support");
-                param.setValidationRegex("validationRegex_claim_should_support");
+//                param.setI18nKey("i18nKey_claim_should_support");
+//                param.setValidationRegex("validationRegex_claim_should_support");
 
                 if (context.getRegisteringUser() != null && context.getRegisteringUser().getClaims() != null &&
                         context.getRegisteringUser().getClaims().get(claimUri) != null) {
@@ -127,9 +126,8 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
             context.updateRequestedParameterList(params);
 
             return USER_INPUT_REQUIRED;
-        } else if (USER_INPUT_REQUIRED.equals(status) && registrationRequest.getInputs() != null) {
+        } else if (USER_INPUT_REQUIRED.equals(status) && inputs != null) {
 
-            Map<String, String> inputs = registrationRequest.getInputs();
             List<RequiredParam> unsatisfiedParams = new ArrayList<>();
             RegistrationRequestedUser user =  context.getRegisteringUser();
             if (user == null) {
@@ -161,7 +159,7 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
 
         return COMPLETE;
         }
-        return INCOMPLETE;
+        return NOT_HANDLED;
     }
 
     private void updateResponse(NextStepResponse response, RegistrationStepExecutorConfig config,

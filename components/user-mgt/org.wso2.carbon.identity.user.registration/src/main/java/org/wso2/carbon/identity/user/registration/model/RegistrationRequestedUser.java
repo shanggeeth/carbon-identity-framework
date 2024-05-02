@@ -42,6 +42,8 @@ public class RegistrationRequestedUser implements Serializable {
     public void setUsername(String username) {
 
         this.username = username;
+        // Update the username claim as well.
+        this.claims.put("http://wso2.org/claims/username", username);
     }
 
     public String getCredential() {
@@ -79,9 +81,9 @@ public class RegistrationRequestedUser implements Serializable {
         return isPasswordless;
     }
 
-    public void setPasswordless(boolean passwordless) {
+    public void setPasswordless(boolean isPasswordless) {
 
-        isPasswordless = passwordless;
+        this.isPasswordless = isPasswordless;
     }
 
     public List<String> getStatusList() {
