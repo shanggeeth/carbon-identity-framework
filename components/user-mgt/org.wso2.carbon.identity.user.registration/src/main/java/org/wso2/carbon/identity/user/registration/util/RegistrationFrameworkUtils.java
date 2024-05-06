@@ -67,7 +67,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.INITIAL_AUTH_REQUEST;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.INITIAL_AUTH_REQUEST;
 
 public class RegistrationFrameworkUtils {
 
@@ -129,7 +129,7 @@ public class RegistrationFrameworkUtils {
     }
 
     public static RegistrationContext initiateRegContext(String appId, String tenantDomain,
-                                    RegistrationFlowConstants.SupportedProtocol type) throws RegistrationFrameworkException {
+                                    RegistrationConstants.SupportedProtocol type) throws RegistrationFrameworkException {
 
         RegistrationContext context = new RegistrationContext();
         context.setContextIdentifier(UUID.randomUUID().toString());
@@ -250,7 +250,7 @@ public class RegistrationFrameworkUtils {
     public static RegistrationSequenceHandler getRegistrationSeqHandler(RegistrationSequence sequence) {
 
         if (sequence.getFlowDefinition() == null
-                || RegistrationFlowConstants.DEFAULT_FLOW_DEFINITION.equals(sequence.getFlowDefinition())) {
+                || RegistrationConstants.DEFAULT_FLOW_DEFINITION.equals(sequence.getFlowDefinition())) {
             return DefaultRegistrationSequenceHandler.getInstance();
         }
         return null;

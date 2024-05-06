@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration.model.response;
 
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,16 +28,16 @@ import java.util.List;
  */
 public class NextStepResponse {
 
-    private RegistrationFlowConstants.StepType type;
+    private RegistrationConstants.StepType type;
     private List<ExecutorResponse> executors = new ArrayList<>();
-    private List<Message> messages = new ArrayList<>();
+    private Message message;
 
-    public RegistrationFlowConstants.StepType getType() {
+    public RegistrationConstants.StepType getType() {
 
         return type;
     }
 
-    public void setType(RegistrationFlowConstants.StepType type) {
+    public void setType(RegistrationConstants.StepType type) {
 
         this.type = type;
     }
@@ -57,18 +57,13 @@ public class NextStepResponse {
         this.executors.add(executor);
     }
 
-    public List<Message> getMessages() {
+    public Message getMessage() {
 
-        return messages;
+        return message;
     }
 
-    public void setMessages(List<Message> messages) {
+    public void setMessage(Message message) {
 
-        this.messages = messages;
-    }
-
-    public void addMessage(Message message) {
-
-        this.messages.add(message);
+        this.message = message;
     }
 }

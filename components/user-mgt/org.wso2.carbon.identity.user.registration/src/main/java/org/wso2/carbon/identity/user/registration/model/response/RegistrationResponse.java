@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration.model.response;
 
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +29,7 @@ import java.util.List;
 public class RegistrationResponse {
 
     private String flowId;
-    private RegistrationFlowConstants.Status status;
+    private RegistrationConstants.Status status;
     private String userAssertion;
     private NextStepResponse nextStep;
     private List<LinkObject> links = new ArrayList<>();
@@ -44,12 +44,12 @@ public class RegistrationResponse {
         this.flowId = flowId;
     }
 
-    public RegistrationFlowConstants.Status getStatus() {
+    public RegistrationConstants.Status getStatus() {
 
         return status;
     }
 
-    public void setStatus(RegistrationFlowConstants.Status status) {
+    public void setStatus(RegistrationConstants.Status status) {
 
         this.status = status;
     }

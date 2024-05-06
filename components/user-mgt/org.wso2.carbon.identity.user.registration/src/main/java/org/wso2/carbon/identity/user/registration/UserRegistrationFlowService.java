@@ -21,14 +21,14 @@ package org.wso2.carbon.identity.user.registration;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.response.RegistrationResponse;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 
 import javax.servlet.http.HttpServletRequest;
 
 public interface UserRegistrationFlowService {
 
     public RegistrationResponse initiateUserRegistration(String appId, String tenantDomain,
-                                                         RegistrationFlowConstants.SupportedProtocol type) throws RegistrationFrameworkException;
+                                                         RegistrationConstants.SupportedProtocol type) throws RegistrationFrameworkException;
 
     public RegistrationResponse initiateUserRegistration(HttpServletRequest request) throws RegistrationFrameworkException;
     public RegistrationResponse processIntermediateUserRegistration(RegistrationRequest request) throws RegistrationFrameworkException;

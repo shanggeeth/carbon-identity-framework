@@ -24,7 +24,7 @@ import org.wso2.carbon.identity.user.registration.exception.RegistrationFramewor
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.response.RegistrationResponse;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFrameworkUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -42,7 +42,7 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
     @Override
     public RegistrationResponse initiateUserRegistration(String appId,
                                                          String tenantDomain,
-                                                         RegistrationFlowConstants.SupportedProtocol type)
+                                                         RegistrationConstants.SupportedProtocol type)
             throws RegistrationFrameworkException {
 
         RegistrationContext context = RegistrationFrameworkUtils.initiateRegContext(appId, tenantDomain, type);

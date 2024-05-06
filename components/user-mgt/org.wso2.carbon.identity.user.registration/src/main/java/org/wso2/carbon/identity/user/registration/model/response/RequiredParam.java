@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration.model.response;
 
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 
 /**
  * This class represents the required parameter in the registration flow.
@@ -27,7 +27,7 @@ public class RequiredParam {
 
     private String name;
     private String availableValue;
-    private RegistrationFlowConstants.DataType dataType;
+    private RegistrationConstants.DataType dataType;
     private boolean isConfidential;
     private boolean isMandatory;
     private int order;
@@ -54,12 +54,12 @@ public class RequiredParam {
         this.availableValue = availableValue;
     }
 
-    public RegistrationFlowConstants.DataType getDataType() {
+    public RegistrationConstants.DataType getDataType() {
 
         return dataType;
     }
 
-    public void setDataType(RegistrationFlowConstants.DataType dataType) {
+    public void setDataType(RegistrationConstants.DataType dataType) {
 
         this.dataType = dataType;
     }

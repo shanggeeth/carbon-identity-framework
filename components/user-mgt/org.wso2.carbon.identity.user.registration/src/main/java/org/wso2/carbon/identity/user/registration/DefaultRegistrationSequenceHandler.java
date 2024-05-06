@@ -18,7 +18,6 @@
 
 package org.wso2.carbon.identity.user.registration;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
@@ -27,7 +26,7 @@ import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
 import org.wso2.carbon.identity.user.registration.model.response.RegistrationResponse;
 import org.wso2.carbon.identity.user.registration.config.RegistrationStep;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 import org.wso2.carbon.identity.user.registration.util.RegistrationFrameworkUtils;
 
 import java.util.Optional;
@@ -58,7 +57,7 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
             RegistrationStep stepConfig= context.getRegistrationSequence().getStepDefinitions().get(currentStep);
 
             // If the current step is completed.
-            if (stepConfig != null && RegistrationFlowConstants.StepStatus.COMPLETE.equals(context.getCurrentStepStatus())) {
+            if (stepConfig != null && RegistrationConstants.StepStatus.COMPLETE.equals(context.getCurrentStepStatus())) {
 
                 // Check whether there are more steps to execute.
                 if (context.getRegistrationSequence().getStepDefinitions().size() == currentStep + 1) {
@@ -73,8 +72,8 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
             NextStepResponse response1 = registrationStepHandler.handle(request, context);
 
             // If step is not completed, that means step wants to redirect to outside.
-            if (!RegistrationFlowConstants.StepStatus.COMPLETE.equals(context.getCurrentStepStatus())) {
-                response.setStatus(RegistrationFlowConstants.Status.INCOMPLETE);
+            if (!RegistrationConstants.StepStatus.COMPLETE.equals(context.getCurrentStepStatus())) {
+                response.setStatus(RegistrationConstants.Status.INCOMPLETE);
                 response.setNextStep(response1);
                 return response;
             }
@@ -84,7 +83,7 @@ public class DefaultRegistrationSequenceHandler implements RegistrationSequenceH
             LOG.info("The registration is completed. Can trigger post registration steps.");
             String userId = RegistrationFrameworkUtils.createUser(context.getRegisteringUser(), context.getTenantDomain());
             context.setCompleted(true);
-            response.setStatus(RegistrationFlowConstants.Status.COMPLETE);
+            response.setStatus(RegistrationConstants.Status.COMPLETE);
             Optional<String> encodedUserAssertion = RegistrationFrameworkUtils.getSignedUserAssertion(userId, context);
             encodedUserAssertion.ifPresent(response::setUserAssertion);
         }

@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration.model.response;
 
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,18 +28,28 @@ import java.util.Map;
  */
 public class Message {
 
-    private RegistrationFlowConstants.MessageType type;
+    private RegistrationConstants.MessageType type;
     private String messageId;
     private String message;
     private Map<String, String> context = new HashMap<>();
     private String i18nkey;
 
-    public RegistrationFlowConstants.MessageType getType() {
+    public Message() {
+
+    }
+
+    public Message(RegistrationConstants.MessageType type, String message) {
+
+        this.type = type;
+        this.message = message;
+    }
+
+    public RegistrationConstants.MessageType getType() {
 
         return type;
     }
 
-    public void setType(RegistrationFlowConstants.MessageType type) {
+    public void setType(RegistrationConstants.MessageType type) {
 
         this.type = type;
     }

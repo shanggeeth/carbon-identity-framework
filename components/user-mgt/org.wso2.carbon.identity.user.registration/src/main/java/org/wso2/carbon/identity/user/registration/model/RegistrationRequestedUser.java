@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.user.registration.model;
 
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +45,7 @@ public class RegistrationRequestedUser implements Serializable {
 
         this.username = username;
         // Update the username claim as well.
-        this.claims.put("http://wso2.org/claims/username", username);
+        this.claims.put(RegistrationConstants.USERNAME_CLAIM_URI, username);
     }
 
     public String getCredential() {

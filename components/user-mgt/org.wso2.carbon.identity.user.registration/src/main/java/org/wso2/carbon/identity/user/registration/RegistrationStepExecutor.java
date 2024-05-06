@@ -20,13 +20,11 @@ package org.wso2.carbon.identity.user.registration;
 
 import org.wso2.carbon.identity.user.registration.config.RegistrationStepExecutorConfig;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.registration.model.EngagedExecutor;
 import org.wso2.carbon.identity.user.registration.model.RegistrationContext;
-import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -35,11 +33,11 @@ public interface RegistrationStepExecutor {
 
     String getName();
 
-    RegistrationFlowConstants.RegistrationExecutorBindingType getBindingType() throws RegistrationFrameworkException;
+    RegistrationConstants.RegExecutorBindingType getBindingType();
 
-    String getBoundIdentifier() throws RegistrationFrameworkException;
+    String getBoundIdentifier();
 
-    String getExecutorType() throws RegistrationFrameworkException;
+    String getExecutorType();
 
     StepStatus execute(Map<String, String> inputs, RegistrationContext context, NextStepResponse response,
                        RegistrationStepExecutorConfig config) throws RegistrationFrameworkException;

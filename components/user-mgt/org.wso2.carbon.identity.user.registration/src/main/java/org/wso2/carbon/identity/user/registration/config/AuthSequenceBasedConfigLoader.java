@@ -21,18 +21,16 @@ package org.wso2.carbon.identity.user.registration.config;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
-import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
 import org.wso2.carbon.identity.application.common.model.AuthenticationStep;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfig;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
-import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.user.registration.RegistrationStepExecutor;
 import org.wso2.carbon.identity.user.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.internal.UserRegistrationServiceDataHolder;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 import org.wso2.carbon.idp.mgt.IdentityProviderManager;
 
@@ -69,7 +67,7 @@ public class AuthSequenceBasedConfigLoader implements RegistrationSequenceLoader
 
         RegistrationSequence sequenceConfig = new RegistrationSequence();
         sequenceConfig.setApplicationId(serviceProvider.getApplicationName());
-        sequenceConfig.setFlowDefinition(RegistrationFlowConstants.DEFAULT_FLOW_DEFINITION);
+        sequenceConfig.setFlowDefinition(RegistrationConstants.DEFAULT_FLOW_DEFINITION);
 
         if (authenticationSteps == null || authenticationSteps.length == 0) {
             return sequenceConfig;
@@ -86,12 +84,12 @@ public class AuthSequenceBasedConfigLoader implements RegistrationSequenceLoader
 
         RegistrationStepExecutorConfig attributeCollectorConfig = deriveAttributeCollectionStep(serviceProvider);
 
-        if (attributeCollectorConfig != null) {
-            // Include the attribute collection as a mandatory task for the first step.
-            RegistrationStep firstStep = sequenceConfig.getStepDefinitions().get(0);
-            firstStep.addConfiguredExecutor(attributeCollectorConfig);
-            firstStep.setType(RegistrationFlowConstants.StepType.AGGREGATED_TASKS);
-        }
+//        if (attributeCollectorConfig != null) {
+//            // Include the attribute collection as a mandatory task for the first step.
+//            RegistrationStep firstStep = sequenceConfig.getStepDefinitions().get(0);
+//            firstStep.addConfiguredExecutor(attributeCollectorConfig);
+//            firstStep.setType(RegistrationConstants.StepType.AGGREGATED_TASKS);
+//        }
         return sequenceConfig;
     }
 
@@ -151,7 +149,7 @@ public class AuthSequenceBasedConfigLoader implements RegistrationSequenceLoader
         }
 
         if (executorConfigs.size() == 0) {
-            LOG.info("No supported executors in the step");
+            LOG.info("No supported executors in the step.");
             return null;
         }
         RegistrationStep stepConfig = new RegistrationStep();
@@ -162,7 +160,7 @@ public class AuthSequenceBasedConfigLoader implements RegistrationSequenceLoader
             stepConfig.setSelectedExecutor(executorConfigs.get(0));
         }
         if (executorConfigs.size() > 1) {
-            stepConfig.setType(RegistrationFlowConstants.StepType.MULTI_OPTION);
+            stepConfig.setType(RegistrationConstants.StepType.MULTI_OPTION);
         }
         return stepConfig;
     }
@@ -175,7 +173,7 @@ public class AuthSequenceBasedConfigLoader implements RegistrationSequenceLoader
         RegistrationStepExecutor mappedRegExecutor = null;
 
         for (RegistrationStepExecutor executor : UserRegistrationServiceDataHolder.getRegistrationStepExecutors()) {
-            if (RegistrationFlowConstants.RegistrationExecutorBindingType.AUTHENTICATOR.equals(executor.getBindingType())
+            if (RegistrationConstants.RegExecutorBindingType.AUTHENTICATOR.equals(executor.getBindingType())
                     && executor.getBoundIdentifier().equals(authenticatorName)) {
                 mappedRegExecutor = executor;
                 break;
@@ -185,7 +183,7 @@ public class AuthSequenceBasedConfigLoader implements RegistrationSequenceLoader
         if (mappedRegExecutor == null) {
             return null;
         }
-        regStepConfig.setName(idpName);
+        regStepConfig.setName(mappedRegExecutor.getName());
         regStepConfig.setId(Base64.getEncoder().encodeToString(idpName.getBytes(StandardCharsets.UTF_8)));
         regStepConfig.setExecutor(mappedRegExecutor);
         regStepConfig.setIdentityProvider(idp);
@@ -201,10 +199,12 @@ public class AuthSequenceBasedConfigLoader implements RegistrationSequenceLoader
             return null;
         }
         RegistrationStepExecutorConfig config = new RegistrationStepExecutorConfig();
-        config.setName("AttributeCollection");
-        config.setId("AttributeCollectorBasedOnAppClaims");
+        RegistrationStepExecutor executor = getRegStepExecutor(RegistrationConstants.ATTRIBUTE_COLLECTOR);
+        config.setName(executor.getName());
+        config.setId(Base64.getEncoder()
+                             .encodeToString("AttributeCollectorBasedOnAppClaims".getBytes(StandardCharsets.UTF_8)));
         config.setRequestedClaims(requestedClaims);
-        config.setExecutor(getRegStepExecutor("AttributeCollector"));
+        config.setExecutor(executor);
         config.setOptional(false);
         return config;
     }

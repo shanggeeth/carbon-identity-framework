@@ -18,11 +18,10 @@
 
 package org.wso2.carbon.identity.user.registration.model;
 
-import org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.user.registration.config.RegistrationSequence;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ public class RegistrationContext implements Serializable {
     private static final long serialVersionUID = 542871476395078667L;
 
     private int currentStep = 0;
-    private RegistrationFlowConstants.StepStatus currentStepStatus;
+    private RegistrationConstants.StepStatus currentStepStatus;
     private String contextIdentifier;
     private String tenantDomain;
     private String requestType;
@@ -163,12 +162,12 @@ public class RegistrationContext implements Serializable {
         this.requestedParameters.addAll(newParamList);
     }
 
-    public RegistrationFlowConstants.StepStatus getCurrentStepStatus() {
+    public RegistrationConstants.StepStatus getCurrentStepStatus() {
 
         return currentStepStatus;
     }
 
-    public void setCurrentStepStatus(RegistrationFlowConstants.StepStatus currentStepStatus) {
+    public void setCurrentStepStatus(RegistrationConstants.StepStatus currentStepStatus) {
 
         this.currentStepStatus = currentStepStatus;
     }

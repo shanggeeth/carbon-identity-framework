@@ -18,10 +18,12 @@
 
 package org.wso2.carbon.identity.user.registration.util;
 
-public class RegistrationFlowConstants {
+public class RegistrationConstants {
 
     public final static String DEFAULT_FLOW_DEFINITION = "default";
     public final static String INITIAL_AUTH_REQUEST = "initialAuthRequest";
+    public final static String ATTRIBUTE_COLLECTOR = "Attribute Collector";
+    public final static String USERNAME_CLAIM_URI = "http://wso2.org/claims/username";
 
     public enum Status {
 
@@ -30,14 +32,15 @@ public class RegistrationFlowConstants {
         FAILED
     }
 
-    public enum RegistrationExecutorType {
+    public enum RegExecutorType {
 
         ATTRIBUTE, // Indicates the registration executor is an attribute collector.
         CREDENTIAL, // Indicates the registration executor is a credential collector.
         VERIFIER, // Indicates the registration executor is a verifier.
+        CREDENTIAL_VERIFIER, // Indicates the registration executor can act both as a credential collector and verifier.
     }
 
-    public enum RegistrationExecutorBindingType {
+    public enum RegExecutorBindingType {
 
         NONE, // Indicates there is no binding.
         AUTHENTICATOR // Indicates the registration executor is bound to an authenticator.

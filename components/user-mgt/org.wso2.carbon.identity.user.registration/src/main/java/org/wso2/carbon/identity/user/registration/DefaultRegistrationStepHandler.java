@@ -32,22 +32,21 @@ import org.wso2.carbon.identity.user.registration.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.registration.model.response.ExecutorResponse;
 import org.wso2.carbon.identity.user.registration.model.response.Message;
 import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.RegistrationExecutorBindingType.AUTHENTICATOR;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.AGGREGATED_TASKS_PENDING;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.COMPLETE;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.SELECTION_PENDING;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.AGGREGATED_TASKS;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.MULTI_OPTION;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepType.SINGLE_OPTION;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.RegExecutorBindingType.AUTHENTICATOR;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus.AGGREGATED_TASKS_PENDING;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus.COMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus.NOT_STARTED;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus.SELECTION_PENDING;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus.USER_INPUT_REQUIRED;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepType.AGGREGATED_TASKS;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepType.MULTI_OPTION;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepType.SINGLE_OPTION;
 
 public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
 
@@ -62,21 +61,19 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
     @Override
     public NextStepResponse handle(RegistrationRequest request, RegistrationContext context) throws RegistrationFrameworkException {
 
-        boolean allStepExecutorsEngaged = false;
         RegistrationStep step = context.getRegistrationSequence().getStepDefinitions().get(context.getCurrentStep());
         List<RegistrationStepExecutorConfig> regExecutorConfigs = step.getConfiguredExecutors();
-        List<EngagedExecutor> engagedExecutors = request.getEngagedExecutors();
 
         NextStepResponse stepResponse = new NextStepResponse();
         stepResponse.setType(step.getType());
 
-        RegistrationFlowConstants.StepStatus status = context.getCurrentStepStatus();
+        RegistrationConstants.StepStatus status = context.getCurrentStepStatus();
 
         if (status == null) {
             context.setCurrentStepStatus(NOT_STARTED);
         }
 
-        if (RegistrationFlowConstants.StepType.MULTI_OPTION.equals(step.getType())) {
+        if (RegistrationConstants.StepType.MULTI_OPTION.equals(step.getType())) {
             // Handling multi option steps.
             if (SELECTION_PENDING.equals(context.getCurrentStepStatus())) {
                 // It is expected to an executor to be selected in order to continue the registration.
@@ -88,25 +85,26 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
                                                                                           regExecutorConfigs);
                 step.setSelectedExecutor(selectedExecutor);
                 // Once an executor is selected, it can be considered as a single option and start the flow.
-                stepResponse.setType(SINGLE_OPTION);
+                step.setType(SINGLE_OPTION);
                 context.setCurrentStepStatus(NOT_STARTED);
-                callRegistrationStepExecutor(context, executor.getInputs(), step.getSelectedExecutor(), stepResponse);
+//                callRegistrationStepExecutor(context, executor.getInputs(), step.getSelectedExecutor(), stepResponse);
             } else {
-                context.setCurrentStepStatus(SELECTION_PENDING);
                 loadMultiOptionsForStep(context, stepResponse, regExecutorConfigs);
+                Message message = new Message(RegistrationConstants.MessageType.INFO,
+                                              "Select an option to proceed the registration.");
+                context.setCurrentStepStatus(SELECTION_PENDING);
                 stepResponse.setType(MULTI_OPTION);
-
-                Message message = new Message();
-                message.setType(RegistrationFlowConstants.MessageType.INFO);
-                message.setMessage("Select an option to proceed the registration.");
-                stepResponse.addMessage(message);
+                stepResponse.setMessage(message);
                 // Further processing of the step is not possible without selecting an executor.
                 return stepResponse;
             }
         }
 
-        if (step.getConfiguredExecutors().size() == 1) {
-            step.setSelectedExecutor(step.getConfiguredExecutors().get(0));
+        if (SINGLE_OPTION.equals(step.getType())) {
+            if (step.getSelectedExecutor() == null && step.getConfiguredExecutors().size() == 1) {
+                step.setSelectedExecutor(step.getConfiguredExecutors().get(0));
+            }
+
             if (!(request.getEngagedExecutors().size() == 1)) {
                 throw new RegistrationFrameworkException("Only one registration executor is expected.");
             }
@@ -114,7 +112,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
             callRegistrationStepExecutor(context, executor.getInputs(), step.getSelectedExecutor(), stepResponse);
         }
 
-        if (RegistrationFlowConstants.StepType.AGGREGATED_TASKS.equals(step.getType())) {
+        if (RegistrationConstants.StepType.AGGREGATED_TASKS.equals(step.getType())) {
 
             // Handling aggregated.
             if (AGGREGATED_TASKS_PENDING.equals(context.getCurrentStepStatus())) {
@@ -124,16 +122,13 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
                 stepResponse.setType(AGGREGATED_TASKS);
                 context.setCurrentStepStatus(AGGREGATED_TASKS_PENDING);
 
-                Message message = new Message();
-                message.setType(RegistrationFlowConstants.MessageType.INFO);
-                message.setMessage("Provide inputs to proceed the registration.");
-                stepResponse.addMessage(message);
+                Message message = new Message(RegistrationConstants.MessageType.INFO,
+                                              "This is an aggregated step. One or more executors must be engaged.");
+                stepResponse.setMessage(message);
                 // Further processing of the step is not possible without selecting an executor.
                 return stepResponse;
             }
-
         }
-
         return stepResponse;
     }
 
@@ -182,7 +177,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
                     externalIdPConfig, regExecutor.getExecutor().getBoundIdentifier()));
         }
 
-        RegistrationFlowConstants.StepStatus stepStatus = regExecutor.getExecutor()
+        RegistrationConstants.StepStatus stepStatus = regExecutor.getExecutor()
                 .execute(inputs, context, stepResponse, regExecutor);
         // If the step is completed and an authenticator is involved, add it to the engaged authenticators list.
         if (stepStatus == COMPLETE) {
@@ -233,7 +228,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
             } else {
                 ExecutorResponse executorResponse = new ExecutorResponse();
                 executorResponse.setName(regExecutor.getName());
-                executorResponse.setExecutorName(regExecutor.getExecutor().getName());
+                executorResponse.setType(regExecutor.getExecutor().getExecutorType());
                 executorResponse.setId(regExecutor.getId());
                 stepResponse.addExecutor(executorResponse);            }
         }

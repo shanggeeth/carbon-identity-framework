@@ -18,8 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration.config;
 
-import org.wso2.carbon.identity.user.registration.RegistrationStepExecutor;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ public class RegistrationStep implements Serializable {
 
     private static final long serialVersionUID = -6352819516789400021L;
     private String id;
-    private RegistrationFlowConstants.StepType type;
+    private RegistrationConstants.StepType type;
     private RegistrationStepExecutorConfig selectedExecutor;
     private List<RegistrationStepExecutorConfig> configuredExecutors = new ArrayList<>();
 
@@ -73,12 +72,12 @@ public class RegistrationStep implements Serializable {
         this.configuredExecutors.add(configuredExecutor);
     }
 
-    public RegistrationFlowConstants.StepType getType() {
+    public RegistrationConstants.StepType getType() {
 
         return type;
     }
 
-    public void setType(RegistrationFlowConstants.StepType type) {
+    public void setType(RegistrationConstants.StepType type) {
 
         this.type = type;
     }

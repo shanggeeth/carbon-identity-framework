@@ -28,19 +28,19 @@ import org.wso2.carbon.identity.user.registration.model.response.ExecutorRespons
 import org.wso2.carbon.identity.user.registration.model.response.Message;
 import org.wso2.carbon.identity.user.registration.model.response.NextStepResponse;
 import org.wso2.carbon.identity.user.registration.model.response.RequiredParam;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.RegistrationExecutorBindingType;
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants.RegExecutorBindingType;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.RegistrationExecutorBindingType.NONE;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.COMPLETE;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_HANDLED;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.NOT_STARTED;
-import static org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants.StepStatus.USER_INPUT_REQUIRED;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.RegExecutorBindingType.NONE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus.COMPLETE;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus.NOT_HANDLED;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus.NOT_STARTED;
+import static org.wso2.carbon.identity.user.registration.util.RegistrationConstants.StepStatus.USER_INPUT_REQUIRED;
 
 public class AttributeCollectionRegStepExecutor implements RegistrationStepExecutor {
 
@@ -54,25 +54,25 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
     @Override
     public String getName() {
 
-        return "AttributeCollector";
+        return RegistrationConstants.ATTRIBUTE_COLLECTOR;
     }
 
     @Override
-    public RegistrationExecutorBindingType getBindingType() throws RegistrationFrameworkException {
+    public RegExecutorBindingType getBindingType() {
 
         return NONE;
     }
 
     @Override
-    public String getBoundIdentifier() throws RegistrationFrameworkException {
+    public String getBoundIdentifier() {
 
         return null;
     }
 
     @Override
-    public String getExecutorType() throws RegistrationFrameworkException {
+    public String getExecutorType() {
 
-        return RegistrationFlowConstants.RegistrationExecutorType.ATTRIBUTE.toString();
+        return RegistrationConstants.RegExecutorType.ATTRIBUTE.toString();
     }
 
     public List<RequiredParam> getRequiredParams() {
@@ -85,7 +85,7 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
                               NextStepResponse response, RegistrationStepExecutorConfig config)
             throws RegistrationFrameworkException {
 
-        RegistrationFlowConstants.StepStatus status = context.getCurrentStepStatus();
+        RegistrationConstants.StepStatus status = context.getCurrentStepStatus();
 
         if (NOT_STARTED.equals(status) ) {
 
@@ -93,13 +93,14 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
             List<RequiredParam> undefinedParams = new ArrayList<>();
 
             int displayOder = 0;
+            // TODO: Consider only the non-identity claims.
             for (ClaimMapping mapping : config.getRequestedClaims()) {
                 String claimUri = mapping.getRemoteClaim().getClaimUri();
                 RequiredParam param = new RequiredParam();
                 param.setName(claimUri);
                 param.setConfidential(false);
                 param.setMandatory(mapping.isMandatory());
-                param.setDataType(RegistrationFlowConstants.DataType.STRING); //TODO: Need to get the data type from the
+                param.setDataType(RegistrationConstants.DataType.STRING); //TODO: Need to get the data type from the
                 param.setOrder(displayOder++);
 //                param.setI18nKey("i18nKey_claim_should_support");
 //                param.setValidationRegex("validationRegex_claim_should_support");
@@ -118,10 +119,7 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
                 return COMPLETE;
             }
 
-            Message message = new Message();
-            message.setMessage("User input required");
-            message.setType(RegistrationFlowConstants.MessageType.INFO);
-
+            Message message = new Message(RegistrationConstants.MessageType.INFO, "User input required");
             updateResponse(response, config, params, message);
             context.updateRequestedParameterList(params);
 
@@ -135,8 +133,8 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
                 context.setRegisteringUser(user);
             }
 
-            if (inputs.get("http://wso2.org/claims/username") != null) {
-                user.setUsername(inputs.get("http://wso2.org/claims/username"));
+            if (inputs.get(RegistrationConstants.USERNAME_CLAIM_URI) != null) {
+                user.setUsername(inputs.get(RegistrationConstants.USERNAME_CLAIM_URI));
             }
             for (RequiredParam param: context.getRequestedParameters()) {
                 if (param.getAvailableValue() != null) {
@@ -167,16 +165,17 @@ public class AttributeCollectionRegStepExecutor implements RegistrationStepExecu
 
         ExecutorResponse executorResponse = new ExecutorResponse();
         executorResponse.setName(config.getName());
-        executorResponse.setExecutorName(this.getName());
+        executorResponse.setType(this.getExecutorType());
         executorResponse.setId(config.getId());
 
         ExecutorMetadata metadata = new ExecutorMetadata();
         metadata.setI18nKey("executor.attributeCollection");
-        metadata.setPromptType(RegistrationFlowConstants.PromptType.USER_PROMPT);
+        metadata.setPromptType(RegistrationConstants.PromptType.USER_PROMPT);
         metadata.setRequiredParams(params);
+
         executorResponse.setMetadata(metadata);
+        executorResponse.setMessage(message);
 
         response.addExecutor(executorResponse);
-        response.addMessage(message);
     }
 }

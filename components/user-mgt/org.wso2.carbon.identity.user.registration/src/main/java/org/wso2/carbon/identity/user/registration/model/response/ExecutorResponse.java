@@ -18,19 +18,16 @@
 
 package org.wso2.carbon.identity.user.registration.model.response;
 
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
-
-import java.util.List;
-
 /**
  * This class represents the response of a registration step executor.
  */
 public class ExecutorResponse {
 
     private String name;
-    private String executorName;
+    private String type;
     private String id;
     private ExecutorMetadata metadata;
+    private Message message;
 
     public String getName() {
 
@@ -42,14 +39,14 @@ public class ExecutorResponse {
         this.name = name;
     }
 
-    public String getExecutorName() {
+    public String getType() {
 
-        return executorName;
+        return type;
     }
 
-    public void setExecutorName(String executorName) {
+    public void setType(String type) {
 
-        this.executorName = executorName;
+        this.type = type;
     }
 
     public String getId() {
@@ -70,5 +67,15 @@ public class ExecutorResponse {
     public void setMetadata(ExecutorMetadata metadata) {
 
         this.metadata = metadata;
+    }
+
+    public Message getMessage() {
+
+        return message;
+    }
+
+    public void setMessage(Message message) {
+
+        this.message = message;
     }
 }

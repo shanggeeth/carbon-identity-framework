@@ -18,23 +18,23 @@
 
 package org.wso2.carbon.identity.user.registration.model.response;
 
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 
 /**
  * This class represents the result of a registration step.
  */
 public class RegistrationStepResult {
 
-    private RegistrationFlowConstants.StepStatus status = RegistrationFlowConstants.StepStatus.NOT_STARTED;
+    private RegistrationConstants.StepStatus status = RegistrationConstants.StepStatus.NOT_STARTED;
     private Message message;
     private ExecutorResponse response;
 
-    public RegistrationFlowConstants.StepStatus getStatus() {
+    public RegistrationConstants.StepStatus getStatus() {
 
         return status;
     }
 
-    public void setStatus(RegistrationFlowConstants.StepStatus status) {
+    public void setStatus(RegistrationConstants.StepStatus status) {
 
         this.status = status;
     }

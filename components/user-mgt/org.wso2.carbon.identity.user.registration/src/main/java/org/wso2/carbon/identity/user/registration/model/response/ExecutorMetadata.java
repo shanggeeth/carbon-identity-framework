@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration.model.response;
 
-import org.wso2.carbon.identity.user.registration.util.RegistrationFlowConstants;
+import org.wso2.carbon.identity.user.registration.util.RegistrationConstants;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,10 +30,9 @@ import java.util.Map;
 public class ExecutorMetadata {
 
     private String i18nKey;
-    private RegistrationFlowConstants.PromptType promptType;
+    private RegistrationConstants.PromptType promptType;
     private List<RequiredParam> requiredParams;
     private Map<String, String> additionalData = new HashMap<>();
-
 
     public String getI18nKey() {
 
@@ -45,12 +44,12 @@ public class ExecutorMetadata {
         this.i18nKey = i18nKey;
     }
 
-    public RegistrationFlowConstants.PromptType getPromptType() {
+    public RegistrationConstants.PromptType getPromptType() {
 
         return promptType;
     }
 
-    public void setPromptType(RegistrationFlowConstants.PromptType promptType) {
+    public void setPromptType(RegistrationConstants.PromptType promptType) {
 
         this.promptType = promptType;
     }
