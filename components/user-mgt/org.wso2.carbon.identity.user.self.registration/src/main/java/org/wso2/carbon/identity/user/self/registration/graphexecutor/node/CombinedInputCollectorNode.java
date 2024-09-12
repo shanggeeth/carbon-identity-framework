@@ -1,0 +1,81 @@
+/*
+ * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
+
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_COMPLETE;
+
+public class CombinedInputCollectorNode implements Node {
+
+    private String name;
+    private List<Node> referencedNodes; // For branching paths
+    private Node nextNode; // For selected path
+
+    public CombinedInputCollectorNode(String name) {
+        this.name = name;
+        this.referencedNodes = new ArrayList<>();
+    }
+
+    public void setNextNode(Node nextNode) {
+        this.nextNode = nextNode;
+    }
+
+    public void addReferencedNode(Node referencedNode) {
+
+        referencedNodes.add(referencedNode);
+    }
+
+    @Override
+    public Node getNextNode() {
+
+        return nextNode;
+    }
+
+    @Override
+    public String getName() {
+
+        return name;
+    }
+
+    @Override
+    public NodeResponse execute(InputData inputData) {
+
+        NodeResponse result = new NodeResponse(STATUS_COMPLETE);
+        for (Node referencedNode : referencedNodes) {
+            List<InputMetaData> dataRequired = referencedNode.declareInputData();
+            if (dataRequired != null) {
+                result.addInputData(referencedNode.getName(), dataRequired);
+            }
+        }
+        // Only declare the data required. So this node is complete.
+        return result;
+    }
+
+    @Override
+    public List<InputMetaData> declareInputData() {
+
+        return null;
+    }
+}
