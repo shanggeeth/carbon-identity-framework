@@ -35,13 +35,10 @@ package org.wso2.carbon.identity.user.self.registration.graphexecutor.model;/*
  */
 
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.Node;
-import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_FLOW_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_INCOMPLETE;

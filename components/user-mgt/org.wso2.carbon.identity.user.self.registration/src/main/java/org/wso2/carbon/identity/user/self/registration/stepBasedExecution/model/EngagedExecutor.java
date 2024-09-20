@@ -16,32 +16,42 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.cache;
+package org.wso2.carbon.identity.user.self.registration.stepBasedExecution.model;
 
-import org.wso2.carbon.identity.core.cache.CacheEntry;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Cache entry for RegistrationContext.
+ * Represents the executor that is engaged in the registration process.
  */
-public class RegistrationContextCacheEntry extends CacheEntry {
+public class EngagedExecutor {
 
-    private static final long serialVersionUID = 9071624974136245647L;
+    private String id;
+    private Map<String, String> inputs = new HashMap<>();
 
-    RegistrationContext context;
+    public EngagedExecutor(String id, Map<String, String> inputs) {
 
-    public RegistrationContextCacheEntry(RegistrationContext context) {
-
-        this.context = context;
+        this.id = id;
+        this.inputs = inputs;
     }
 
-    public RegistrationContext getContext() {
+    public String getId() {
 
-        return context;
+        return id;
     }
 
-    public void setContext(RegistrationContext context) {
+    public void setId(String id) {
 
-        this.context = context;
+        this.id = id;
+    }
+
+    public Map<String, String> getInputs() {
+
+        return inputs;
+    }
+
+    public void setInputs(Map<String, String> inputs) {
+
+        this.inputs = inputs;
     }
 }

@@ -16,32 +16,15 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.cache;
+package org.wso2.carbon.identity.user.self.registration.stepBasedExecution;
 
-import org.wso2.carbon.identity.core.cache.CacheEntry;
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.model.RegistrationRequest;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response.NextStepResponse;
 
-/**
- * Cache entry for RegistrationContext.
- */
-public class RegistrationContextCacheEntry extends CacheEntry {
+public interface RegistrationStepHandler {
 
-    private static final long serialVersionUID = 9071624974136245647L;
+    NextStepResponse handle(RegistrationRequest request, RegistrationContext context) throws RegistrationFrameworkException;
 
-    RegistrationContext context;
-
-    public RegistrationContextCacheEntry(RegistrationContext context) {
-
-        this.context = context;
-    }
-
-    public RegistrationContext getContext() {
-
-        return context;
-    }
-
-    public void setContext(RegistrationContext context) {
-
-        this.context = context;
-    }
 }

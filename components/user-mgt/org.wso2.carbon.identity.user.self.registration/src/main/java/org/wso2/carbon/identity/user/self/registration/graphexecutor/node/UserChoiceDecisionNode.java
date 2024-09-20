@@ -22,8 +22,7 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegOption;
-import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -19,7 +19,7 @@
 package org.wso2.carbon.identity.user.self.registration.internal;
 
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
-import org.wso2.carbon.identity.user.self.registration.RegistrationStepExecutor;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.RegistrationStepExecutor;
 import org.wso2.carbon.user.core.service.RealmService;
 
 import java.util.ArrayList;

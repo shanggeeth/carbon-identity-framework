@@ -29,19 +29,19 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegSe
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.CombinedInputCollectorNode;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.TaskExecutorNode;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.UserChoiceDecisionNode;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.poc.AttributeCollector;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.poc.EmailOTPExecutor;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.poc.PasswordOnboarder;
-import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
-import org.wso2.carbon.identity.user.self.registration.model.RegistrationRequest;
-import org.wso2.carbon.identity.user.self.registration.model.response.RegistrationResponse;
-import org.wso2.carbon.identity.user.self.registration.util.RegistrationConstants;
-import org.wso2.carbon.identity.user.self.registration.util.RegistrationFrameworkUtils;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.AttributeCollector;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.EmailOTPExecutor;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.PasswordOnboarder;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.model.RegistrationRequest;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.DefaultRegistrationSequenceHandler;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response.RegistrationResponse;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationConstants;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationFrameworkUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowService{

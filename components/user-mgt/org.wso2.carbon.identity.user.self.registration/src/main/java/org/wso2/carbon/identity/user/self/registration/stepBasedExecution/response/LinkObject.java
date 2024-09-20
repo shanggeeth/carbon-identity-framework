@@ -16,32 +16,44 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.cache;
-
-import org.wso2.carbon.identity.core.cache.CacheEntry;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
+package org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response;
 
 /**
- * Cache entry for RegistrationContext.
+ * This class is used to represent the link object in the response.
  */
-public class RegistrationContextCacheEntry extends CacheEntry {
+public class LinkObject {
 
-    private static final long serialVersionUID = 9071624974136245647L;
+    private String name;
+    private String href;
+    private String method;
 
-    RegistrationContext context;
+    public String getName() {
 
-    public RegistrationContextCacheEntry(RegistrationContext context) {
-
-        this.context = context;
+        return name;
     }
 
-    public RegistrationContext getContext() {
+    public void setName(String name) {
 
-        return context;
+        this.name = name;
     }
 
-    public void setContext(RegistrationContext context) {
+    public String getHref() {
 
-        this.context = context;
+        return href;
+    }
+
+    public void setHref(String href) {
+
+        this.href = href;
+    }
+
+    public String getMethod() {
+
+        return method;
+    }
+
+    public void setMethod(String method) {
+
+        this.method = method;
     }
 }

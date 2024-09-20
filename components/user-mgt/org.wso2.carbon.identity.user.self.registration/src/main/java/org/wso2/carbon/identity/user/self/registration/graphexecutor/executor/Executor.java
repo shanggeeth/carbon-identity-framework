@@ -16,32 +16,21 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.cache;
+package org.wso2.carbon.identity.user.self.registration.graphexecutor.executor;
 
-import org.wso2.carbon.identity.core.cache.CacheEntry;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.ExecutorResponse;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
 
-/**
- * Cache entry for RegistrationContext.
- */
-public class RegistrationContextCacheEntry extends CacheEntry {
+import java.util.List;
+import java.util.Map;
 
-    private static final long serialVersionUID = 9071624974136245647L;
+// executor.Executor.java
+public interface Executor {
 
-    RegistrationContext context;
+    String getName();
+    List<InputMetaData> declareRequiredData();
 
-    public RegistrationContextCacheEntry(RegistrationContext context) {
+    ExecutorResponse process(Map<String, String> input, RegistrationContext context);
 
-        this.context = context;
-    }
-
-    public RegistrationContext getContext() {
-
-        return context;
-    }
-
-    public void setContext(RegistrationContext context) {
-
-        this.context = context;
-    }
 }

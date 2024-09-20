@@ -21,12 +21,11 @@ package org.wso2.carbon.identity.user.self.registration;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.ExecutionState;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
-import org.wso2.carbon.identity.user.self.registration.model.RegistrationRequest;
-import org.wso2.carbon.identity.user.self.registration.model.response.RegistrationResponse;
-import org.wso2.carbon.identity.user.self.registration.util.RegistrationConstants;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.model.RegistrationRequest;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response.RegistrationResponse;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationConstants;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 import java.util.Map;
 
 public interface UserRegistrationFlowService {

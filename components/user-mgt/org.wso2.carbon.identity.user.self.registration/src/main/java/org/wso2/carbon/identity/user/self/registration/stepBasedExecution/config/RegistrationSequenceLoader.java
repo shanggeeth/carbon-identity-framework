@@ -16,23 +16,17 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
+package org.wso2.carbon.identity.user.self.registration.stepBasedExecution.config;
 
+import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
 
 /**
- * Interface for a node in the graph executor.
+ * This an interface for loading the registration sequences based on the configurations.
  */
-public interface Node {
+public interface RegistrationSequenceLoader {
 
-    Node getNextNode();
+    public RegistrationSequence loadRegistrationSequence(ServiceProvider serviceProvider) throws
+                                                                                          RegistrationFrameworkException;
 
-    String getName();
-
-    void setNextNode(Node nextNode);
-
-    NodeResponse execute(InputData inputs, RegistrationContext context) throws RegistrationFrameworkException; // Placeholder for node-specific actions
 }
