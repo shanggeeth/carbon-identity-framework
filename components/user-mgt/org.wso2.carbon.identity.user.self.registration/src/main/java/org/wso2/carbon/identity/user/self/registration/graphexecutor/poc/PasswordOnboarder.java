@@ -24,6 +24,7 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.Execu
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -42,17 +43,9 @@ public class PasswordOnboarder implements Executor {
     public ExecutorResponse process(Map<String, String> input, RegistrationContext context) {
 
         if (input != null && !input.isEmpty()) {
-            for (InputMetaData data : inputMetaData) {
-
-                // Check if data.getName is there as a key in the input map.
-                if (input.containsKey(data.getName())) {
-                    // Check if the value of the key is not null or empty.
-                    if (input.get(data.getName()) != null && !input.get(data.getName()).isEmpty()) {
-                        // Remove the data from the requiredData list.
-                        inputMetaData.remove(data);
-                    }
-                }
-            }
+            inputMetaData.removeIf(
+                    data -> input.containsKey(data.getName()) && input.get(data.getName()) != null && !input.get(
+                            data.getName()).isEmpty());
         } else {
             declareRequiredData();
         }

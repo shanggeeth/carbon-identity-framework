@@ -90,7 +90,7 @@
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>${project.artifactId}</Bundle-Name>
                         <Private-Package>
-                            org.wso2.carbon.identity.user.registration.internal
+                            org.wso2.carbon.identity.user.self.registration.internal
                         </Private-Package>
                         <Import-Package>
                             javax.xml.parsers; version="${javax.xml.parsers.import.pkg.version}",

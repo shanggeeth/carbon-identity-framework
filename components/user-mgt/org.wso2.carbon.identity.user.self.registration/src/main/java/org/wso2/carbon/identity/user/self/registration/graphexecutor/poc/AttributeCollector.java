@@ -58,19 +58,9 @@ public class AttributeCollector implements Executor {
     public ExecutorResponse process(Map<String, String> input, RegistrationContext context) {
         // Implement the actual task logic here
         if (input != null && !input.isEmpty()) {
-            Iterator<InputMetaData> iterator = requiredData.iterator();
-            while (iterator.hasNext()) {
-                InputMetaData data = iterator.next();
-
-                // Check if data.getName is there as a key in the input map.
-                if (input.containsKey(data.getName())) {
-                    // Check if the value of the key is not null or empty.
-                    if (input.get(data.getName()) != null && !input.get(data.getName()).isEmpty()) {
-                        // Remove the data from the requiredData list using the iterator.
-                        iterator.remove();
-                    }
-                }
-            }
+            requiredData.removeIf(
+                    data -> input.containsKey(data.getName()) && input.get(data.getName()) != null && !input.get(
+                            data.getName()).isEmpty());
         }
 
         if (!requiredData.isEmpty()) {

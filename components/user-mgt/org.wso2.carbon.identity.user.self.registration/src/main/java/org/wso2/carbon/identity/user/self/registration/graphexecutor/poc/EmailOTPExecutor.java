@@ -26,9 +26,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_COMPLETE;
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_INPUT_REQUIRED;
+
 public class EmailOTPExecutor implements Executor {
 
-    private final List<InputMetaData> inputMetaData = new ArrayList<>();
+    private final List<InputMetaData> inputMetaData = getInitiallyRequiredData();
+
+    private final String EMAIL_ADDRESS = "emailaddress";
+    private final String EMAIL_OTP = "email-otp";
 
     public String getName() {
 
@@ -40,28 +46,31 @@ public class EmailOTPExecutor implements Executor {
 
     public ExecutorResponse process(Map<String, String> input, RegistrationContext context) {
 
-        getInitiallyRequiredData();
         // Implement the actual task logic here
         if (input != null && !input.isEmpty()) {
-            for (InputMetaData data : inputMetaData) {
-
-                // Check if data.getName is there as a key in the input map.
-                if (input.containsKey(data.getName())) {
-                    // Check if the value of the key is not null or empty.
-                    if (input.get(data.getName()) != null && !input.get(data.getName()).isEmpty()) {
-                        // Remove the data from the requiredData list.
-                        inputMetaData.remove(data);
-                    }
-                }
+            if (input.containsKey(EMAIL_ADDRESS)) {
+                // Send OTP to the email address
+                // Generate OTP
+                // Send OTP to the email address
+                // Store the OTP in the context
+                // Store the email address in the context
+                // Update the required data
+                inputMetaData.clear();
+                inputMetaData.addAll(getIntermediateRequiredData());
+            } else if (input.containsKey(EMAIL_OTP)) {
+                // Validate the OTP
+                // If the OTP is valid, update the context
+                // Update the required data
+                inputMetaData.clear();
             }
         }
 
         if (!inputMetaData.isEmpty()) {
-            ExecutorResponse executorResponse = new ExecutorResponse("USER_INPUT");
+            ExecutorResponse executorResponse = new ExecutorResponse(STATUS_USER_INPUT_REQUIRED);
             executorResponse.setRequiredData(inputMetaData);
             return executorResponse;
         }
-        return new ExecutorResponse("NONE");
+        return new ExecutorResponse(STATUS_NODE_COMPLETE);
     }
 
     @Override
@@ -75,7 +84,7 @@ public class EmailOTPExecutor implements Executor {
 
         // Define a new list of InputMetaData and add the data object and return the list.
         List<InputMetaData> inputMetaData = new ArrayList<>();
-        InputMetaData data = new InputMetaData("emailaddress", "string", 1);
+        InputMetaData data = new InputMetaData(EMAIL_ADDRESS, "string", 1);
         inputMetaData.add(data);
         return inputMetaData;
     }
@@ -83,7 +92,7 @@ public class EmailOTPExecutor implements Executor {
     private List<InputMetaData> getIntermediateRequiredData(){
 
         List<InputMetaData> inputMetaData = new ArrayList<>();
-        InputMetaData data = new InputMetaData("email-otp", "otp", 1);
+        InputMetaData data = new InputMetaData(EMAIL_OTP, "otp", 1);
         inputMetaData.add(data);
         return inputMetaData;
     }

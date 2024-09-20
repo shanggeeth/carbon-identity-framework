@@ -23,6 +23,7 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.Input
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegOption;
+import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,7 @@ public class UserChoiceDecisionNode implements Node {
 
     private String name;
     private final List<Node> nextNodes; // For branching paths
-    private Node selectedNode; // For selected path
+    private Node nextNode; // For selected path
 
     // Define a constant for decision options.
     private static final String USER_CHOICE = "user-choice";
@@ -57,11 +58,11 @@ public class UserChoiceDecisionNode implements Node {
     }
 
     public Node getNextNode() {
-        return selectedNode;
+        return nextNode;
     }
 
     @Override
-    public NodeResponse execute(InputData inputData) {
+    public NodeResponse execute(InputData inputData, RegistrationContext context) {
         // Decision logic
         boolean nodeSelected = false;
 
@@ -70,7 +71,7 @@ public class UserChoiceDecisionNode implements Node {
                 if (nextNode instanceof TaskExecutorNode) {
                     String executorName = ((TaskExecutorNode) nextNode).getExecutor().getName();
                     if (inputData.getUserInput().get(USER_CHOICE).equals(executorName)) {
-                        selectedNode = nextNode;
+                        this.nextNode = nextNode;
                         nodeSelected = true;
                         break;
                     }
@@ -78,27 +79,26 @@ public class UserChoiceDecisionNode implements Node {
             }
         }
         if (nodeSelected) {
-            return new NodeResponse(Constants.STATUS_COMPLETE);
+            return new NodeResponse(Constants.STATUS_NODE_COMPLETE);
         } else {
             NodeResponse response = new NodeResponse(STATUS_USER_CHOICE_REQUIRED);
-            response.addInputData(name, declareInputData());
+            response.addInputData(name, getUserChoices());
             return response;
         }
     }
 
-    @Override
-    public List<InputMetaData> declareInputData() {
+    public List<InputMetaData> getUserChoices() {
 
-        if (selectedNode != null) {
+        if (nextNode != null) {
             return null;
         }
 
         InputMetaData meta = new InputMetaData(USER_CHOICE, "multiple-options", 1);
+        meta.setMandatory(true);
+        meta.setI18nKey("user.choice");
         for (Node nextNode : nextNodes) {
             if (nextNode instanceof TaskExecutorNode) {
-                RegOption option = new RegOption();
-                option.setValue(((TaskExecutorNode) nextNode).getExecutor().getName());
-                meta.addRegOption(option);
+                meta.addOption(((TaskExecutorNode) nextNode).getExecutor().getName());
             }
         }
         List<InputMetaData> input = new ArrayList<>();

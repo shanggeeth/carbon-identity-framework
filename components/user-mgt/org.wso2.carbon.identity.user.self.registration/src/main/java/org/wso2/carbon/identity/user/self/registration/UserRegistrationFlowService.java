@@ -27,6 +27,7 @@ import org.wso2.carbon.identity.user.self.registration.util.RegistrationConstant
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 
 public interface UserRegistrationFlowService {
 
@@ -36,5 +37,5 @@ public interface UserRegistrationFlowService {
     public RegistrationResponse initiateUserRegistration(HttpServletRequest request) throws RegistrationFrameworkException;
     public RegistrationResponse processIntermediateUserRegistration(RegistrationRequest request) throws RegistrationFrameworkException;
 
-    public ExecutionState triggerRegFlow(String flowId, List<InputData> inputs ) throws RegistrationFrameworkException;
+    public ExecutionState triggerRegFlow(String flowId, Map<String, InputData> inputs ) throws RegistrationFrameworkException;
 }

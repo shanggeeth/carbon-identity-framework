@@ -25,10 +25,18 @@ public class Constants {
 
     // Define a set of constants to track the status returned from the Executor level. The status can be COMPLETE,
     // INCOMPLETE, USER_INPUT_REQUIRED, ERROR, USER_CHOICE_REQUIRED
-    public static final String STATUS_COMPLETE = "COMPLETE";
+    public static final String STATUS_FLOW_COMPLETE = "COMPLETE";
     public static final String STATUS_USER_INPUT_REQUIRED = "USER_INPUT_REQUIRED";
     public static final String STATUS_ERROR = "ERROR";
     public static final String STATUS_USER_CHOICE_REQUIRED = "USER_CHOICE_REQUIRED";
     public static final String STATUS_INCOMPLETE = "INCOMPLETE";
+    public static final String STATUS_FLOW_NOT_STARTED = "FLOW_NOT_STARTED";
+    public static final String STATUS_NODE_NOT_STARTED = "NODE_NOT_STARTED";
+    public static final String STATUS_NODE_COMPLETE = "NODE_COMPLETE";
+    public static final String STATUS_COMPLETE = "COMPLETE";
+
+
+
+
 
 }

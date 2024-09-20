@@ -34,16 +34,25 @@ package org.wso2.carbon.identity.user.self.registration.graphexecutor.model;/*
  * under the License.
  */
 
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.Node;
+import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_FLOW_COMPLETE;
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_INCOMPLETE;
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_COMPLETE;
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_NOT_STARTED;
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_CHOICE_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_INPUT_REQUIRED;
 
 public class RegSequence {
 
     private List<Node> nodes; // Keep track of all nodes
-    private ExecutionState currentState;
 
     public RegSequence() {
         this.nodes = new ArrayList<>();
@@ -69,62 +78,47 @@ public class RegSequence {
         return null;
     }
 
-    public ExecutionState execute(List<InputData> inputDataList) {
+    public NodeResponse execute(RegistrationContext context)
+            throws RegistrationFrameworkException {
 
-        Node currentNode;
+        Node currentNode = context.getCurrentNode();
         if (nodes.isEmpty()) {
-            return null;
+            throw new RegistrationFrameworkException("No nodes found in the sequence.");
         }
-        if (currentState == null) {
-            currentState = new ExecutionState();
+        // If the current node is not provided, start from the beginning.
+        if (currentNode == null) {
             currentNode = nodes.get(0);
-        } else {
-            // Resume from the current state
-            currentNode = currentState.getCurrentNode();
         }
 
         while (currentNode != null) {
 
-            InputData data = null;
+            // Retrieve the inputs for the current node and remove it from the context.
+            InputData dataForCurrentNode = context.retrieveUserInputFromContext(currentNode.getName());
+            NodeResponse nodeResponse = currentNode.execute(dataForCurrentNode, context);
+            context.setRequiredMetaData(nodeResponse.getInputDataList());
 
-            // Find matching InputData for the current node.
-            if (inputDataList != null) {
-                for (InputData inputData : inputDataList) {
-                    if (inputData.getNodeName().equals(currentNode.getName())) {
-                        data = inputData;
-                        break;
-                    }
-                }
+            if (STATUS_USER_CHOICE_REQUIRED.equals(nodeResponse.getStatus()) ||
+                    STATUS_USER_INPUT_REQUIRED.equals(nodeResponse.getStatus())) {
+                context.setCurrentNode(currentNode);
+                context.setCurrentStatus(nodeResponse.getStatus());
+                return nodeResponse;
             }
 
-            NodeResponse result = currentNode.execute(data);
-
-            if (!Constants.STATUS_COMPLETE.equals(result.getStatus())) {
-                // Input is required
-                currentState.setCurrentNode(currentNode);
-                currentState.setResponse(result);
-                return currentState;
-            }
-
-            if (Constants.STATUS_COMPLETE.equals(result.getStatus()) &&
-                    result.getInputDataList() != null && !result.getInputDataList().isEmpty()) {
-                // Input is required but the node execution is complete.
+            // Sometimes the node execution can be completed but request more data. Ex: CombinedInputCollectorNode.
+            if (STATUS_NODE_COMPLETE.equals(nodeResponse.getStatus()) &&
+                    nodeResponse.getInputDataList() != null && !nodeResponse.getInputDataList().isEmpty()) {
                 currentNode = currentNode.getNextNode();
-                result.setStatus(Constants.STATUS_USER_INPUT_REQUIRED);
-                currentState.setCurrentNode(currentNode);
-                currentState.setResponse(result);
-                return currentState;
+                nodeResponse.setStatus(STATUS_INCOMPLETE);
+                context.setCurrentNode(currentNode);
+                context.setCurrentStatus(STATUS_USER_INPUT_REQUIRED);
+                return nodeResponse;
             }
+
+            context.setCurrentStatus(STATUS_NODE_NOT_STARTED);
             currentNode = currentNode.getNextNode();
         }
 
-        // Clear the state if we reach the end of the execution
-        String flowId = currentState.getFlowId();
-        currentState = null;
-        NodeResponse response = new NodeResponse(Constants.STATUS_COMPLETE);
-        ExecutionState finalState = new ExecutionState();
-        finalState.setFlowId(flowId);
-        finalState.setResponse(response);
-        return finalState; // Execution completed
+        context.setCurrentStatus(STATUS_FLOW_COMPLETE);
+        return new NodeResponse(STATUS_FLOW_COMPLETE);
     }
 }

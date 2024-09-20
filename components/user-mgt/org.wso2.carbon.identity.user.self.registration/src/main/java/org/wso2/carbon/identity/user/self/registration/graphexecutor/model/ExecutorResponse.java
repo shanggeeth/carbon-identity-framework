@@ -27,7 +27,6 @@ import java.util.List;
 public class ExecutorResponse {
 
     private String status;
-    private String executorName;
     private List<InputMetaData> requiredData;
 
     public ExecutorResponse(String status) {
@@ -35,17 +34,6 @@ public class ExecutorResponse {
         this.requiredData = new ArrayList<>();
     }
 
-    public String getExecutorName() {
-
-        return executorName;
-    }
-
-    public void setExecutorName(String executorName) {
-
-        this.executorName = executorName;
-    }
-
-    // Getters and Setters
     public String getStatus() {
 
         return status;
@@ -66,7 +54,6 @@ public class ExecutorResponse {
         this.requiredData = requiredData;
     }
 
-    // Add model.Element to requiredData list.
     public void addRequiredData(InputMetaData inputMetaData) {
 
         requiredData.add(inputMetaData);

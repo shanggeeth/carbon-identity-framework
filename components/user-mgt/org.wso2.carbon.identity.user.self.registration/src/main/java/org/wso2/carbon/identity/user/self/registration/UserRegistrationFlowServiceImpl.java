@@ -24,6 +24,7 @@ import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFra
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.ExecutionState;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegSequence;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.CombinedInputCollectorNode;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.TaskExecutorNode;
@@ -39,6 +40,8 @@ import org.wso2.carbon.identity.user.self.registration.util.RegistrationFramewor
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowService{
@@ -99,25 +102,30 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
     }
 
     @Override
-    public ExecutionState triggerRegFlow(String flowId, List<InputData> inputs) throws RegistrationFrameworkException {
+    public ExecutionState triggerRegFlow(String flowId, Map<String, InputData> inputs) throws RegistrationFrameworkException {
 
         RegistrationContext context;
         RegSequence sequence;
-        ExecutionState state;
         if (flowId == null) {
-            state = new ExecutionState();
+            flowId = UUID.randomUUID().toString();
             context = new RegistrationContext();
             sequence = loadSequence();
-            context.setContextIdentifier(UUID.randomUUID().toString());
+            context.setRegSequence(sequence);
+            context.setContextIdentifier(flowId);
         } else {
             context = RegistrationFrameworkUtils.retrieveRegContextFromCache(flowId);
-            sequence = (RegSequence) context.getProperty("REG_SEQUENCE");
+            sequence = context.getRegSequence();
         }
-
-        state = sequence.execute(inputs);
-        state.setFlowId(context.getContextIdentifier());
+        if (!validateInputs(inputs, context)) {
+            throw new RegistrationFrameworkException("Invalid inputs provided.");
+        }
+        context.addUserInputs(inputs);
+        NodeResponse response = sequence.execute(context);
+        ExecutionState state = new ExecutionState();
+        state.setFlowId(flowId);
+        state.setResponse(response);
         // Save the current sequence in the context.
-        context.setProperty("REG_SEQUENCE", sequence);
+
         RegistrationFrameworkUtils.addRegContextToCache(context);
         return state;
     }
@@ -146,6 +154,7 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
         CombinedInputCollectorNode node0 = new CombinedInputCollectorNode("node0");
         node0.addReferencedNode(node1);
         node0.addReferencedNode(node2);
+        node0.addReferencedNode(node5);
 
         // Define the flow of the graph
         RegSequence regSequence = new RegSequence();
@@ -165,5 +174,51 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
         regSequence.addNextNode("node4", node5);
 
         return regSequence;
+    }
+
+    private boolean validateInputs(Map<String, InputData> inputs, RegistrationContext context) {
+
+        if (context.getRequiredMetaData() == null) {
+            return true;
+        }
+        if (context.getRequiredMetaData() != null && (inputs == null || inputs.isEmpty())) {
+            return false;
+        }
+
+        // Is the following logic null safe?
+        for (Map.Entry<String, List<InputMetaData>> entry : context.getRequiredMetaData().entrySet()) {
+
+            if (inputs.get(entry.getKey()) == null) {
+                return false;
+            }
+
+            Map<String, String> inputForNode = inputs.get(entry.getKey()).getUserInput();
+
+            for (InputMetaData metaData : entry.getValue()) {
+
+                // Return false if the input is mandatory and not provided.
+                if (metaData.isMandatory() && (inputForNode == null || inputForNode.get(metaData.getName()) == null)) {
+                    return false;
+                }
+
+                // Return false if the regex validation fails.
+                if (metaData.getValidationRegex() != null && inputForNode != null &&
+                        !inputForNode.get(metaData.getName()).matches(metaData.getValidationRegex())) {
+                    return false;
+                }
+
+                // Return false if the given option is not in the list of provided options.
+                List<Object> providedOptions = metaData.getOptions();
+                if (providedOptions != null && !providedOptions.isEmpty() && inputForNode != null &&
+                        !providedOptions.contains(inputForNode.get(metaData.getName()))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private void filterRequiredData() {
+
     }
 }

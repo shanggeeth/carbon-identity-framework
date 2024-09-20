@@ -20,6 +20,7 @@ package org.wso2.carbon.identity.user.self.registration.graphexecutor.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class InputMetaData {
 
@@ -31,7 +32,7 @@ public class InputMetaData {
     private int order;
     private String validationRegex;
     private String i18nKey;
-    private List<RegOption> regOptions = new ArrayList<RegOption>();
+    private List<Object> options = new ArrayList<>();
 
     public InputMetaData(String name, String dataType, int order) {
 
@@ -120,15 +121,13 @@ public class InputMetaData {
         this.i18nKey = i18nKey;
     }
 
-    public List<RegOption> getRegOptions() {
-        return regOptions;
+    public List<Object> getOptions() {
+
+        return options;
     }
 
-    public void setRegOptions(List<RegOption> regOptions) {
-        this.regOptions = regOptions;
-    }
+    public void addOption(Object option) {
 
-    public void addRegOption(RegOption regOption) {
-        this.regOptions.add(regOption);
+        this.options.add(option);
     }
 }

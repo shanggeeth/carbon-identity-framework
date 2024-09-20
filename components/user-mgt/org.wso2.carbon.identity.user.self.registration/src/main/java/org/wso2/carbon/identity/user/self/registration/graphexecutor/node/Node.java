@@ -18,9 +18,11 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
+import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 import java.util.List;
 
@@ -30,11 +32,10 @@ import java.util.List;
 public interface Node {
 
     Node getNextNode();
+
     String getName();
 
     void setNextNode(Node nextNode);
 
-    NodeResponse execute(InputData inputs); // Placeholder for node-specific actions
-
-    List<InputMetaData> declareInputData(); // Placeholder for declaring required data
+    NodeResponse execute(InputData inputs, RegistrationContext context) throws RegistrationFrameworkException; // Placeholder for node-specific actions
 }

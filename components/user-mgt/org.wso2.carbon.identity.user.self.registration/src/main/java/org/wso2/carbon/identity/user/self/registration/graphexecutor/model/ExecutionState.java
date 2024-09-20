@@ -23,16 +23,7 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.Node;
 public class ExecutionState {
 
     private String flowId;
-    private Node currentNode;
     private NodeResponse response;
-
-    public Node getCurrentNode() {
-        return currentNode;
-    }
-
-    public void setCurrentNode(Node currentNode) {
-        this.currentNode = currentNode;
-    }
 
     public String getFlowId() {
 

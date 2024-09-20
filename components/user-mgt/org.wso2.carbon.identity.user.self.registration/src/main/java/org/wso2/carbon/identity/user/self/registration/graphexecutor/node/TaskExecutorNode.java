@@ -18,16 +18,17 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.poc.Executor;
+import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 import java.util.List;
 
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_COMPLETE;
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_ERROR;
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_INPUT_REQUIRED;
 
 /**
@@ -36,10 +37,11 @@ import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Cons
 public class TaskExecutorNode implements Node {
 
     private String name;
-    private Node nextNode; // For sequential traversal
     private Executor executor; // Reference to the executor.Executor
+    private Node nextNode; // For sequential traversal
 
     public TaskExecutorNode(String name, Executor executor) {
+
         this.name = name;
         this.executor = executor;
     }
@@ -65,33 +67,33 @@ public class TaskExecutorNode implements Node {
     }
 
     @Override
-    public NodeResponse execute(InputData inputData) {
+    public NodeResponse execute(InputData inputData, RegistrationContext context)
+            throws RegistrationFrameworkException {
 
         ExecutorResponse executorResponse;
-        if (executor != null) {
-            if (inputData != null) {
-                executorResponse = executor.process(inputData.getUserInput(), null);
-            } else {
-                executorResponse = executor.process(null, null);
-            }
-            if (executorResponse != null && STATUS_USER_INPUT_REQUIRED.equals(executorResponse.getStatus())) {
-                executorResponse.setExecutorName(name);
-                NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
-                response.addInputData(executorResponse.getExecutorName(), executorResponse.getRequiredData());
-                return response;
-            }
-            return new NodeResponse(STATUS_COMPLETE);
-        } else {
-            return new NodeResponse(STATUS_ERROR);
+        if (executor == null) {
+            throw new RegistrationFrameworkException("Executor not found for node");
         }
+        // Check the context.getCurrentStatus == USER_input_required and if the input is null throw exception.
+        if (STATUS_USER_INPUT_REQUIRED.equals(context.getCurrentStatus()) && inputData == null) {
+            throw new RegistrationFrameworkException("Input data is required for the executor.");
+        }
+        if (inputData != null) {
+            executorResponse = executor.process(inputData.getUserInput(), null);
+        } else {
+            executorResponse = executor.process(null, null);
+        }
+        if (executorResponse != null && STATUS_USER_INPUT_REQUIRED.equals(executorResponse.getStatus())) {
+            NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
+            response.addInputData(name, executorResponse.getRequiredData());
+            return response;
+        }
+        return new NodeResponse(STATUS_NODE_COMPLETE);
+
     }
 
-    @Override
-    public List<InputMetaData> declareInputData() {
+    public List<InputMetaData> getRequiredData() {
 
-        if (executor != null) {
-            return executor.declareRequiredData();
-        }
-        return null;
+        return (executor != null) ? executor.declareRequiredData() : null;
     }
 }

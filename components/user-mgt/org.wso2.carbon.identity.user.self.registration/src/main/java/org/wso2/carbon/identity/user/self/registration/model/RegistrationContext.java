@@ -20,6 +20,11 @@ package org.wso2.carbon.identity.user.self.registration.model;
 
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.user.self.registration.config.RegistrationSequence;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegSequence;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.Node;
 import org.wso2.carbon.identity.user.self.registration.model.response.RequiredParam;
 import org.wso2.carbon.identity.user.self.registration.util.RegistrationConstants;
 
@@ -33,13 +38,20 @@ public class RegistrationContext implements Serializable {
 
     private static final long serialVersionUID = 542871476395078667L;
 
+    // Constants introduced with graph execution.
+    private String currentStatus = Constants.STATUS_FLOW_NOT_STARTED;
+    private Node currentNode;
+    private RegSequence regSequence;
+    private RegistrationRequestedUser registeringUser = new RegistrationRequestedUser();
+    private String tenantDomain;
+    private String contextIdentifier;
+    private final Map<String, InputData> userInputs = new HashMap<>();
+    private Map<String, List<InputMetaData>> requiredMetaData;
+
     private int currentStep = 0;
     private RegistrationConstants.StepStatus currentStepStatus;
-    private String contextIdentifier;
-    private String tenantDomain;
     private String requestType;
     private String relyingParty;
-    private RegistrationRequestedUser registeringUser = new RegistrationRequestedUser();
     private RegistrationSequence registrationSequence;
     private List<RequiredParam> requestedParameters;
     private List<String> engagedStepAuthenticators = new ArrayList<>();
@@ -47,6 +59,71 @@ public class RegistrationContext implements Serializable {
     private Map<String, Object> properties = new HashMap<>();
     private ServiceProvider serviceProvider;
     private String flowStatus;
+
+    public String getCurrentStatus() {
+
+        return currentStatus;
+    }
+
+    public void setCurrentStatus(String currentStatus) {
+
+        this.currentStatus = currentStatus;
+    }
+
+    public Node getCurrentNode() {
+
+        return currentNode;
+    }
+
+    public void setCurrentNode(Node currentNode) {
+
+        this.currentNode = currentNode;
+    }
+
+    public RegSequence getRegSequence() {
+
+        return regSequence;
+    }
+
+    public void setRegSequence(RegSequence regSequence) {
+
+        this.regSequence = regSequence;
+    }
+
+    public InputData retrieveUserInputFromContext(String key) {
+
+        InputData requestedData = userInputs.get(key);
+        userInputs.remove(key);
+
+        return requestedData;
+    }
+
+    public void removeUserInputFromContext(String key) {
+
+        userInputs.remove(key);
+    }
+
+    public void addUserInputs(String key, InputData value) {
+
+        userInputs.put(key, value);
+    }
+
+    public void addUserInputs(Map<String, InputData> inputDataMap) {
+
+        if (inputDataMap != null) {
+            userInputs.putAll(inputDataMap);
+        }
+    }
+
+    public Map<String, List<InputMetaData>> getRequiredMetaData() {
+
+        return requiredMetaData;
+    }
+
+    public void setRequiredMetaData(Map<String, List<InputMetaData>> requiredMetaData) {
+
+        this.requiredMetaData = requiredMetaData;
+    }
 
     public String getFlowStatus() {
 
@@ -57,6 +134,7 @@ public class RegistrationContext implements Serializable {
 
         this.flowStatus = flowStatus;
     }
+
 
     public int getCurrentStep() {
 

@@ -23,8 +23,6 @@ package org.wso2.carbon.identity.user.self.registration.graphexecutor.model;
  */
 public class RegOption {
 
-    // In this class, define two private variables named 'value' and 'i18nKey' of type String. And write the getters
-    // and setters as well for those two variables.
     private String value;
     private String i18nKey;
 

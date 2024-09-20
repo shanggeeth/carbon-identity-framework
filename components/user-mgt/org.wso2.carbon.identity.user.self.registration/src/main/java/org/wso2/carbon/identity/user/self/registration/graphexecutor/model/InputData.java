@@ -39,18 +39,7 @@ import java.util.Map;
 
 public class InputData {
 
-    private String nodeName;
     private Map<String, String> userInput = new HashMap<>();
-
-    public String getNodeName() {
-
-        return nodeName;
-    }
-
-    public void setNodeName(String nodeName) {
-
-        this.nodeName = nodeName;
-    }
 
     public Map<String, String> getUserInput() {
 

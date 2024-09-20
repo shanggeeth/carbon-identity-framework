@@ -21,11 +21,12 @@ package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
+import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_COMPLETE;
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_COMPLETE;
 
 public class CombinedInputCollectorNode implements Node {
 
@@ -34,6 +35,7 @@ public class CombinedInputCollectorNode implements Node {
     private Node nextNode; // For selected path
 
     public CombinedInputCollectorNode(String name) {
+
         this.name = name;
         this.referencedNodes = new ArrayList<>();
     }
@@ -60,22 +62,22 @@ public class CombinedInputCollectorNode implements Node {
     }
 
     @Override
-    public NodeResponse execute(InputData inputData) {
+    public NodeResponse execute(InputData inputData, RegistrationContext context) {
 
-        NodeResponse result = new NodeResponse(STATUS_COMPLETE);
+        // Only declare the data required. So this node is complete.
+        NodeResponse result = new NodeResponse(STATUS_NODE_COMPLETE);
         for (Node referencedNode : referencedNodes) {
-            List<InputMetaData> dataRequired = referencedNode.declareInputData();
+            List<InputMetaData> dataRequired = null;
+            if (referencedNode instanceof TaskExecutorNode) {
+                dataRequired = ((TaskExecutorNode) referencedNode).getRequiredData();
+            }
+            if (referencedNode instanceof UserChoiceDecisionNode) {
+                dataRequired = ((UserChoiceDecisionNode) referencedNode).getUserChoices();
+            }
             if (dataRequired != null) {
                 result.addInputData(referencedNode.getName(), dataRequired);
             }
         }
-        // Only declare the data required. So this node is complete.
         return result;
-    }
-
-    @Override
-    public List<InputMetaData> declareInputData() {
-
-        return null;
     }
 }
