@@ -41,50 +41,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_FLOW_COMPLETE;
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_INCOMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_COMPLETE;
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_NOT_STARTED;
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_CHOICE_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_INPUT_REQUIRED;
 
 public class RegSequence {
 
-    private List<Node> nodes; // Keep track of all nodes
+    private final Node firstNode; // Keep track of all nodes
 
-    public RegSequence() {
-        this.nodes = new ArrayList<>();
+    public RegSequence(Node node) {
+
+        firstNode = node;
     }
 
-    public void addNode(Node node) {
-        nodes.add(node);
-    }
-
-    public void addNextNode(String nodeName, Node nextNode) {
-        Node currentNode = findNode(nodeName);
-        if (currentNode != null) {
-            currentNode.setNextNode(nextNode);
-        }
-    }
-
-    private Node findNode(String nodeName) {
-        for (Node node : nodes) {
-            if (node.getName().equals(nodeName)) {
-                return node;
-            }
-        }
-        return null;
-    }
 
     public NodeResponse execute(RegistrationContext context)
             throws RegistrationFrameworkException {
 
         Node currentNode = context.getCurrentNode();
-        if (nodes.isEmpty()) {
+        if (firstNode == null) {
             throw new RegistrationFrameworkException("No nodes found in the sequence.");
         }
         // If the current node is not provided, start from the beginning.
         if (currentNode == null) {
-            currentNode = nodes.get(0);
+            currentNode = firstNode;
         }
 
         while (currentNode != null) {
@@ -92,30 +71,42 @@ public class RegSequence {
             // Retrieve the inputs for the current node and remove it from the context.
             InputData dataForCurrentNode = context.retrieveUserInputFromContext(currentNode.getName());
             NodeResponse nodeResponse = currentNode.execute(dataForCurrentNode, context);
-            context.setRequiredMetaData(nodeResponse.getInputDataList());
 
-            if (STATUS_USER_CHOICE_REQUIRED.equals(nodeResponse.getStatus()) ||
-                    STATUS_USER_INPUT_REQUIRED.equals(nodeResponse.getStatus())) {
+            if (STATUS_USER_INPUT_REQUIRED.equals(nodeResponse.getStatus())) {
                 context.setCurrentNode(currentNode);
-                context.setCurrentStatus(nodeResponse.getStatus());
+                context.setRequiredMetaData(nodeResponse.getInputDataList());
                 return nodeResponse;
             }
 
             // Sometimes the node execution can be completed but request more data. Ex: CombinedInputCollectorNode.
-            if (STATUS_NODE_COMPLETE.equals(nodeResponse.getStatus()) &&
-                    nodeResponse.getInputDataList() != null && !nodeResponse.getInputDataList().isEmpty()) {
-                currentNode = currentNode.getNextNode();
-                nodeResponse.setStatus(STATUS_INCOMPLETE);
+            if (STATUS_NODE_COMPLETE.equals(nodeResponse.getStatus()) && !nodeResponse.getInputDataList().isEmpty()) {
+                currentNode = moveToNextNode(currentNode);
+                nodeResponse.setStatus(STATUS_USER_INPUT_REQUIRED);
                 context.setCurrentNode(currentNode);
-                context.setCurrentStatus(STATUS_USER_INPUT_REQUIRED);
+                context.setRequiredMetaData(nodeResponse.getInputDataList());
                 return nodeResponse;
             }
-
-            context.setCurrentStatus(STATUS_NODE_NOT_STARTED);
-            currentNode = currentNode.getNextNode();
+            currentNode = moveToNextNode(currentNode);
         }
 
-        context.setCurrentStatus(STATUS_FLOW_COMPLETE);
         return new NodeResponse(STATUS_FLOW_COMPLETE);
     }
+
+    /**
+     * Set the current node as the previous node of the next node and return the next node.
+     *
+     * @param currentNode Current node.
+     * @return Next node.
+     */
+    private Node moveToNextNode(Node currentNode) {
+
+        Node nextNode = currentNode.getNextNode();
+
+        if (nextNode != null) {
+            nextNode.setPreviousNode(currentNode);
+        }
+        return nextNode;
+    }
+
+
 }

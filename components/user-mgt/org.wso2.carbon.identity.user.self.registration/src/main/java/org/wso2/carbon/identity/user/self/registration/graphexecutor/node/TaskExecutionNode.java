@@ -19,6 +19,7 @@
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.AuthLinkedExecutor;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
@@ -34,36 +35,19 @@ import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Cons
 /**
  * Implementation of a node specific to executing a registration executor.
  */
-public class TaskExecutorNode implements Node {
+public class TaskExecutionNode extends AbstractNode implements InputCollectionNode {
 
-    private String name;
     private Executor executor; // Reference to the executor.Executor
-    private Node nextNode; // For sequential traversal
 
-    public TaskExecutorNode(String name, Executor executor) {
+    public TaskExecutionNode(String name, Executor executor) {
 
-        this.name = name;
+        setName(name);
         this.executor = executor;
     }
 
     public Executor getExecutor() {
 
         return executor;
-    }
-
-    public String getName() {
-
-        return name;
-    }
-
-    public void setNextNode(Node nextNode) {
-
-        this.nextNode = nextNode;
-    }
-
-    public Node getNextNode() {
-
-        return nextNode;
     }
 
     @Override
@@ -74,22 +58,17 @@ public class TaskExecutorNode implements Node {
         if (executor == null) {
             throw new RegistrationFrameworkException("Executor not found for node");
         }
-        // Check the context.getCurrentStatus == USER_input_required and if the input is null throw exception.
-        if (STATUS_USER_INPUT_REQUIRED.equals(context.getCurrentStatus()) && inputData == null) {
-            throw new RegistrationFrameworkException("Input data is required for the executor.");
-        }
-        if (inputData != null) {
-            executorResponse = executor.process(inputData.getUserInput(), null);
-        } else {
-            executorResponse = executor.process(null, null);
-        }
+        executorResponse = executor.process(inputData != null ? inputData.getUserInput() : null, context);
+
         if (executorResponse != null && STATUS_USER_INPUT_REQUIRED.equals(executorResponse.getStatus())) {
             NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
-            response.addInputData(name, executorResponse.getRequiredData());
+            response.addInputData(getName(), executorResponse.getRequiredData());
             return response;
         }
+        if (executor instanceof AuthLinkedExecutor) {
+            context.addAuthenticatedMethod(((AuthLinkedExecutor) executor).getAssociatedAuthenticator());
+        }
         return new NodeResponse(STATUS_NODE_COMPLETE);
-
     }
 
     public List<InputMetaData> getRequiredData() {

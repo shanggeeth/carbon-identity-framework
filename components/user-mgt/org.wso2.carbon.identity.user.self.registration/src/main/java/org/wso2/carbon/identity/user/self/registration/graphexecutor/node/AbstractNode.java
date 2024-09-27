@@ -23,25 +23,46 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.Input
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
 
-/**
- * Interface for a node in the graph executor.
- */
-public interface Node {
+public abstract class AbstractNode implements Node {
 
-    String getName();
+    private String name;
+    private Node nextNode;
+    private Node previousNode;
 
-    Node getNextNode();
+    public void setName(String name) {
 
-    void setNextNode(Node nextNode);
+        this.name = name;
+    }
 
-    Node getPreviousNode();
+    @Override
+    public String getName() {
 
-    void setPreviousNode(Node previousNode);
+        return this.name;
+    }
 
-    NodeResponse execute(InputData inputs, RegistrationContext context) throws RegistrationFrameworkException; // Placeholder for node-specific actions
+    @Override
+    public Node getNextNode() {
 
-    default NodeResponse rollback(RegistrationContext context) {
-        return null;
-    }  // Placeholder for node-specific actions
+        return this.nextNode;
+    }
 
+    @Override
+    public void setNextNode(Node nextNode) {
+
+        this.nextNode = nextNode;
+
+    }
+
+    @Override
+    public Node getPreviousNode() {
+
+        return this.previousNode;
+    }
+
+    @Override
+    public void setPreviousNode(Node previousNode) {
+
+        this.previousNode = previousNode;
+
+    }
 }

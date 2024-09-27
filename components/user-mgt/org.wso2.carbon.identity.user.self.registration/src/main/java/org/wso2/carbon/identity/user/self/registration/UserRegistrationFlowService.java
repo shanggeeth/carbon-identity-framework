@@ -37,4 +37,7 @@ public interface UserRegistrationFlowService {
     public RegistrationResponse processIntermediateUserRegistration(RegistrationRequest request) throws RegistrationFrameworkException;
 
     public ExecutionState triggerRegFlow(String flowId, Map<String, InputData> inputs ) throws RegistrationFrameworkException;
+
+    public ExecutionState initiateRegFlow(String appId) throws RegistrationFrameworkException;
+
 }

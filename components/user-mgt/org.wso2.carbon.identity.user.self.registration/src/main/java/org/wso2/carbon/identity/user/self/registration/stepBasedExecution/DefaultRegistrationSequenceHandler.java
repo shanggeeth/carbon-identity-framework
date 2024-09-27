@@ -27,7 +27,7 @@ import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.respon
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response.RegistrationResponse;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.config.RegistrationStep;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationConstants;
-import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationFrameworkUtils;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.RegistrationFrameworkUtils;
 
 import java.util.Optional;
 

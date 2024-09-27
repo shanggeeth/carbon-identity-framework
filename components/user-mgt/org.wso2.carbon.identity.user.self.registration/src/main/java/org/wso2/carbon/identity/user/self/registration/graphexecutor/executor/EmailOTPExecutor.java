@@ -29,7 +29,7 @@ import java.util.Map;
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_INPUT_REQUIRED;
 
-public class EmailOTPExecutor implements Executor {
+public class EmailOTPExecutor implements AuthLinkedExecutor {
 
     private final List<InputMetaData> inputMetaData = getInitiallyRequiredData();
 
@@ -38,12 +38,15 @@ public class EmailOTPExecutor implements Executor {
 
     public String getName() {
 
-        return "executor.EmailOTPExecutor";
+        return "EmailOTPVerifier";
+    }
+
+    public String getAssociatedAuthenticator() {
+
+        return "EmailOTP";
     }
 
     @Override
-    // Update all the places where process method is called to pass RegistrationContext as a parameter.
-
     public ExecutorResponse process(Map<String, String> input, RegistrationContext context) {
 
         // Implement the actual task logic here

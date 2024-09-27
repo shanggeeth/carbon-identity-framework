@@ -19,6 +19,7 @@
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.Executor;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
@@ -27,78 +28,65 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.Regis
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_CHOICE_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_INPUT_REQUIRED;
 
 // node.UserChoiceDecisionNode class implementation
-public class UserChoiceDecisionNode implements Node {
+public class UserChoiceDecisionNode extends AbstractNode implements InputCollectionNode {
 
-    private String name;
-    private final List<Node> nextNodes; // For branching paths
-    private Node nextNode; // For selected path
-
-    // Define a constant for decision options.
+    private List<TaskExecutionNode> nextNodes = new ArrayList<>(); // For branching paths
     private static final String USER_CHOICE = "user-choice";
 
     public UserChoiceDecisionNode(String name) {
-        this.name = name;
-        this.nextNodes = new ArrayList<>();
+
+        setName(name);
     }
 
-    public String getName() {
-        return name;
+    public void setNextNodes(List<TaskExecutionNode> nextNodes) {
+
+        this.nextNodes = nextNodes;
     }
 
-    public void setNextNode(Node nextNode) {
-        nextNodes.add(nextNode);
-    }
+    public void addNextNode(TaskExecutionNode node) {
 
-    public List<Node> getNextNodes() {
-        return nextNodes;
-    }
-
-    public Node getNextNode() {
-        return nextNode;
+        this.nextNodes.add(node);
     }
 
     @Override
     public NodeResponse execute(InputData inputData, RegistrationContext context) {
-        // Decision logic
-        boolean nodeSelected = false;
 
         if (inputData != null && inputData.getUserInput() != null && !inputData.getUserInput().isEmpty()) {
-            for (Node nextNode : nextNodes) {
-                if (nextNode instanceof TaskExecutorNode) {
-                    String executorName = ((TaskExecutorNode) nextNode).getExecutor().getName();
+            for (TaskExecutionNode nextNode : nextNodes) {
+                Executor executor = nextNode.getExecutor();
+                if (executor != null) {
+                    String executorName = executor.getName();
                     if (inputData.getUserInput().get(USER_CHOICE).equals(executorName)) {
-                        this.nextNode = nextNode;
-                        nodeSelected = true;
+                        setNextNode(nextNode);
                         break;
                     }
                 }
             }
         }
-        if (nodeSelected) {
+        if (getNextNode() != null) {
             return new NodeResponse(Constants.STATUS_NODE_COMPLETE);
         } else {
-            NodeResponse response = new NodeResponse(STATUS_USER_CHOICE_REQUIRED);
-            response.addInputData(name, getUserChoices());
+            NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
+            response.addInputData(this.getName(), getRequiredData());
             return response;
         }
     }
 
-    public List<InputMetaData> getUserChoices() {
+    @Override
+    public List<InputMetaData> getRequiredData() {
 
-        if (nextNode != null) {
+        if (getNextNode() != null) {
             return null;
         }
 
         InputMetaData meta = new InputMetaData(USER_CHOICE, "multiple-options", 1);
         meta.setMandatory(true);
         meta.setI18nKey("user.choice");
-        for (Node nextNode : nextNodes) {
-            if (nextNode instanceof TaskExecutorNode) {
-                meta.addOption(((TaskExecutorNode) nextNode).getExecutor().getName());
-            }
+        for (TaskExecutionNode nextNode : nextNodes) {
+            meta.addOption(nextNode.getExecutor().getName());
         }
         List<InputMetaData> input = new ArrayList<>();
         input.add(meta);

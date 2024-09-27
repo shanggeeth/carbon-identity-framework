@@ -20,7 +20,6 @@ package org.wso2.carbon.identity.user.self.registration.graphexecutor.model;
 
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.config.RegistrationSequence;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.Node;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response.RequiredParam;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationConstants;
@@ -36,7 +35,6 @@ public class RegistrationContext implements Serializable {
     private static final long serialVersionUID = 542871476395078667L;
 
     // Constants introduced with graph execution.
-    private String currentStatus = Constants.STATUS_FLOW_NOT_STARTED;
     private Node currentNode;
     private RegSequence regSequence;
     private RegistrationRequestedUser registeringUser = new RegistrationRequestedUser();
@@ -51,21 +49,11 @@ public class RegistrationContext implements Serializable {
     private String relyingParty;
     private RegistrationSequence registrationSequence;
     private List<RequiredParam> requestedParameters;
-    private List<String> engagedStepAuthenticators = new ArrayList<>();
+    private List<String> authenticatedMethods = new ArrayList<>();
     private boolean isCompleted;
     private Map<String, Object> properties = new HashMap<>();
     private ServiceProvider serviceProvider;
     private String flowStatus;
-
-    public String getCurrentStatus() {
-
-        return currentStatus;
-    }
-
-    public void setCurrentStatus(String currentStatus) {
-
-        this.currentStatus = currentStatus;
-    }
 
     public Node getCurrentNode() {
 
@@ -85,14 +73,6 @@ public class RegistrationContext implements Serializable {
     public void setRegSequence(RegSequence regSequence) {
 
         this.regSequence = regSequence;
-    }
-
-    public InputData retrieveUserInputFromContext(String key) {
-
-        InputData requestedData = userInputs.get(key);
-        userInputs.remove(key);
-
-        return requestedData;
     }
 
     public void removeUserInputFromContext(String key) {
@@ -259,14 +239,14 @@ public class RegistrationContext implements Serializable {
         this.currentStepStatus = currentStepStatus;
     }
 
-    public void addEngagedStepAuthenticator(String authenticator) {
+    public void addAuthenticatedMethod(String authenticator) {
 
-        this.engagedStepAuthenticators.add(authenticator);
+        this.authenticatedMethods.add(authenticator);
     }
 
-    public List<String> getEngagedStepAuthenticators() {
+    public List<String> getAuthenticatedMethods() {
 
-        return engagedStepAuthenticators;
+        return authenticatedMethods;
     }
 
     public ServiceProvider getServiceProvider() {
@@ -277,5 +257,36 @@ public class RegistrationContext implements Serializable {
     public void setServiceProvider(ServiceProvider serviceProvider) {
 
         this.serviceProvider = serviceProvider;
+    }
+
+    /**
+     * Retrieve and remove a given user input from the context.
+     *
+     * @param key Key of the user input.
+     * @return User input data.
+     */
+    public InputData retrieveUserInputFromContext(String key) {
+
+        InputData requestedData = userInputs.get(key);
+        userInputs.remove(key);
+
+        return requestedData;
+    }
+
+    /**
+     * Update the user input list in the context with the given input data map. This method will also update the
+     * required data list in the context.
+     *
+     * @param inputDataMap User input data.
+     */
+    public void updateRequiredDataWithInputs(Map<String, InputData> inputDataMap) {
+
+        //Loop through the input data map and update the required data list and user input list.
+        for (Map.Entry<String, InputData> entry : inputDataMap.entrySet()) {
+            if (entry.getValue() != null) {
+                requiredMetaData.remove(entry.getKey());
+                userInputs.put(entry.getKey(), entry.getValue());
+            }
+        }
     }
 }

@@ -29,13 +29,18 @@ import java.util.Map;
 
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_INPUT_REQUIRED;
 
-public class PasswordOnboarder implements Executor {
+public class PasswordOnboarder implements AuthLinkedExecutor {
 
     private List<InputMetaData> inputMetaData = new ArrayList<>();
 
     public String getName() {
 
-        return "executor.PasswordOnboarder";
+        return "PasswordOnboarder";
+    }
+
+    public String getAssociatedAuthenticator() {
+
+        return "BasicAuthenticator";
     }
 
     @Override

@@ -28,37 +28,23 @@ import java.util.List;
 
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_COMPLETE;
 
-public class CombinedInputCollectorNode implements Node {
+public class CombinedInputCollectionNode extends AbstractNode {
 
-    private String name;
-    private List<Node> referencedNodes; // For branching paths
-    private Node nextNode; // For selected path
+    private List<InputCollectionNode> referencedNodes = new ArrayList<>();; // For branching paths
 
-    public CombinedInputCollectorNode(String name) {
+    public CombinedInputCollectionNode(String name) {
 
-        this.name = name;
-        this.referencedNodes = new ArrayList<>();
+         setName(name);
     }
 
-    public void setNextNode(Node nextNode) {
-        this.nextNode = nextNode;
+    public void setReferencedNodes(List<InputCollectionNode> refNodeList) {
+
+        this.referencedNodes = refNodeList;
     }
 
-    public void addReferencedNode(Node referencedNode) {
+    public void addReferencedNode(InputCollectionNode referencedNode) {
 
         referencedNodes.add(referencedNode);
-    }
-
-    @Override
-    public Node getNextNode() {
-
-        return nextNode;
-    }
-
-    @Override
-    public String getName() {
-
-        return name;
     }
 
     @Override
@@ -66,16 +52,10 @@ public class CombinedInputCollectorNode implements Node {
 
         // Only declare the data required. So this node is complete.
         NodeResponse result = new NodeResponse(STATUS_NODE_COMPLETE);
-        for (Node referencedNode : referencedNodes) {
-            List<InputMetaData> dataRequired = null;
-            if (referencedNode instanceof TaskExecutorNode) {
-                dataRequired = ((TaskExecutorNode) referencedNode).getRequiredData();
-            }
-            if (referencedNode instanceof UserChoiceDecisionNode) {
-                dataRequired = ((UserChoiceDecisionNode) referencedNode).getUserChoices();
-            }
+        for (InputCollectionNode refNode : referencedNodes) {
+            List<InputMetaData> dataRequired = refNode.getRequiredData();
             if (dataRequired != null) {
-                result.addInputData(referencedNode.getName(), dataRequired);
+                result.addInputData(refNode.getName(), dataRequired);
             }
         }
         return result;

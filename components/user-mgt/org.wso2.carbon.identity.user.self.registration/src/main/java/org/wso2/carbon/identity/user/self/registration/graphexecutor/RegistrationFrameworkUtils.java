@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util;
+package org.wso2.carbon.identity.user.self.registration.graphexecutor;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import org.apache.commons.lang.StringUtils;
@@ -48,6 +48,7 @@ import org.wso2.carbon.identity.user.self.registration.internal.UserRegistration
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationRequestedUser;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response.RequiredParam;
+import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationConstants;
 import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.api.UserStoreManager;
@@ -330,7 +331,7 @@ public class RegistrationFrameworkUtils {
     private static JWTClaimsSet buildUserAssertionClaimSet(String userId, RegistrationContext context) {
 
         long curTimeInMillis = Calendar.getInstance().getTimeInMillis();
-        String[] engagedAuthenticators = context.getEngagedStepAuthenticators().toArray(new String[0]);
+        String[] engagedAuthenticators = context.getAuthenticatedMethods().toArray(new String[0]);
 
         JWTClaimsSet.Builder jwtClaimsSetBuilder = new JWTClaimsSet.Builder();
         jwtClaimsSetBuilder.issuer("wso2");
