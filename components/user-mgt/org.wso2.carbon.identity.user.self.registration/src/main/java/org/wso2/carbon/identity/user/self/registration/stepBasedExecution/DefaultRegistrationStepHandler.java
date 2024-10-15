@@ -30,7 +30,7 @@ import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.model.
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response.ExecutorResponse;
-import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response.Message;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.Message;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response.NextStepResponse;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationConstants;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
@@ -90,8 +90,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
 //                callRegistrationStepExecutor(context, executor.getInputs(), step.getSelectedExecutor(), stepResponse);
             } else {
                 loadMultiOptionsForStep(context, stepResponse, regExecutorConfigs);
-                Message message = new Message(RegistrationConstants.MessageType.INFO,
-                                              "Select an option to proceed the registration.");
+                Message message = new Message("INFO", "Select an option to proceed the registration.");
                 context.setCurrentStepStatus(SELECTION_PENDING);
                 stepResponse.setType(MULTI_OPTION);
                 stepResponse.setMessage(message);
@@ -122,7 +121,7 @@ public class DefaultRegistrationStepHandler implements RegistrationStepHandler {
                 stepResponse.setType(AGGREGATED_TASKS);
                 context.setCurrentStepStatus(AGGREGATED_TASKS_PENDING);
 
-                Message message = new Message(RegistrationConstants.MessageType.INFO,
+                Message message = new Message("INFO",
                                               "This is an aggregated step. One or more executors must be engaged.");
                 stepResponse.setMessage(message);
                 // Further processing of the step is not possible without selecting an executor.

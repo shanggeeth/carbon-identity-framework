@@ -36,6 +36,7 @@ import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataHandler;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationClientException;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.DefaultRegistrationSequenceHandler;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.RegistrationSequenceHandler;
 import org.wso2.carbon.identity.user.self.registration.cache.RegistrationContextCache;
@@ -68,6 +69,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.ErrorMessages.ERROR_FLOW_ID_NOT_FOUND;
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.ErrorMessages.ERROR_INVALID_FLOW_ID;
 import static org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationConstants.INITIAL_AUTH_REQUEST;
 
 public class RegistrationFrameworkUtils {
@@ -83,10 +86,17 @@ public class RegistrationFrameworkUtils {
 
     public static RegistrationContext retrieveRegContextFromCache(String contextId) throws RegistrationFrameworkException {
 
+        if (contextId == null) {
+            throw new RegistrationClientException(ERROR_FLOW_ID_NOT_FOUND.getCode(),
+                                                  ERROR_FLOW_ID_NOT_FOUND.getMessage(),
+                                                  ERROR_FLOW_ID_NOT_FOUND.getDescription());
+        }
         RegistrationContextCacheEntry entry =
                 RegistrationContextCache.getInstance().getValueFromCache(new RegistrationContextCacheKey(contextId));
         if (entry == null) {
-            throw new RegistrationFrameworkException("Invalid flow id: " + contextId);
+            throw new RegistrationClientException(ERROR_INVALID_FLOW_ID.getCode(),
+                                                  ERROR_INVALID_FLOW_ID.getMessage(),
+                                                  String.format(ERROR_INVALID_FLOW_ID.getDescription(), contextId));
         }
         return entry.getContext();
     }
@@ -219,7 +229,7 @@ public class RegistrationFrameworkUtils {
         }
     }
 
-    private static ServiceProvider retrieveSpFromAppId(String appId, String tenantDomain) throws  RegistrationFrameworkException{
+    public static ServiceProvider retrieveSpFromAppId(String appId, String tenantDomain) throws  RegistrationFrameworkException{
 
         ApplicationManagementService appInfo = ApplicationManagementService.getInstance();
 

@@ -31,4 +31,75 @@ public class Constants {
     public static final String STATUS_INCOMPLETE = "INCOMPLETE";
     public static final String STATUS_NODE_COMPLETE = "NODE_COMPLETE";
     public static final String STATUS_COMPLETE = "COMPLETE";
+
+    // Define enums to handle the error codes and messages.
+    public enum ErrorMessages {
+
+        // Server errors.
+        ERROR_SEQUENCE_NOT_DEFINED_FOR_TENANT("SRF-65001",
+                                   "Registration sequence not found.",
+                                   "Registration sequence is not defined for the given tenant: %s"),
+        ERROR_SEQUENCE_NOT_DEFINED_FOR_APP("SRF-65002",
+                                              "Registration sequence not found.",
+                                              "Registration sequence is not defined for the given application: %s"),
+
+        // Client errors.
+        ERROR_INVALID_FLOW_ID("SRF-60001",
+                              "Invalid flow ID.",
+                              "The given flow ID: %s is invalid."),
+        ERROR_FLOW_ID_NOT_FOUND("SRF-60002",
+                              "Flow ID not found.",
+                              "Registration flow id is not found in the request."),;
+
+        private final String code;
+        private final String message;
+        private final String description;
+
+        /**
+         * Create an Error Message.
+         *
+         * @param code    Relevant error code.
+         * @param message Relevant error message.
+         */
+        ErrorMessages(String code, String message, String description) {
+            this.code = code;
+            this.message = message;
+            this.description = description;
+        }
+
+        /**
+         * To get the code of specific error.
+         *
+         * @return Error code.
+         */
+        public String getCode() {
+            return code;
+        }
+
+        /**
+         * To get the message of specific error.
+         *
+         * @return Error message.
+         */
+        public String getMessage() {
+
+            return message;
+        }
+
+        /**
+         * To get the description of specific error.
+         *
+         * @return Error description.
+         */
+        public String getDescription() {
+
+            return description;
+        }
+
+        @Override
+        public String toString() {
+
+            return code + " | " + message;
+        }
+    }
 }

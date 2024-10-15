@@ -23,13 +23,15 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.core.cache.BaseCache;
 
+/**
+ * Cache for RegistrationContext.
+ */
 public class RegistrationContextCache extends BaseCache<RegistrationContextCacheKey, RegistrationContextCacheEntry> {
 
     private static final String REGISTRATION_CONTEXT_CACHE_NAME = "RegistrationContextCache";
     private static final Log LOG = LogFactory.getLog(RegistrationContextCache.class);
-    private static volatile RegistrationContextCache instance = new RegistrationContextCache(REGISTRATION_CONTEXT_CACHE_NAME,
-            true);
-
+    private static final RegistrationContextCache instance = new RegistrationContextCache(REGISTRATION_CONTEXT_CACHE_NAME,
+                                                                                          true);
     private RegistrationContextCache(String cacheName, boolean isTemporary) {
 
             super(cacheName, isTemporary);

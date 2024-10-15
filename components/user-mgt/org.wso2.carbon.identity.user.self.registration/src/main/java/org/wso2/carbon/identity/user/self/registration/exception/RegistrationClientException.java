@@ -18,38 +18,32 @@
 
 package org.wso2.carbon.identity.user.self.registration.exception;
 
-public class RegistrationFrameworkException extends Exception {
+/**
+ * Represents the client exception that occurs in the registration framework.
+ */
+public class RegistrationClientException extends RegistrationFrameworkException {
 
-    private static final long serialVersionUID = 1L;
-
-    private String errorCode;
-    private String description;
-
-    public RegistrationFrameworkException(String message) {
+    public RegistrationClientException(String message) {
 
         super(message);
     }
 
-    public RegistrationFrameworkException(String errorCode, String message, String description, Throwable cause) {
+    public RegistrationClientException(String errorCode, String message, String description, Throwable cause) {
 
-        super(message, cause);
-        this.errorCode = errorCode;
-        this.description = description;
+        super(errorCode, message, description, cause);
     }
 
-    public RegistrationFrameworkException(String errorCode, String message, String description) {
+    public RegistrationClientException(String errorCode, String message, String description) {
 
-        super(message);
-        this.errorCode = errorCode;
-        this.description = description;
+        super(errorCode, message, description);
     }
 
-    public RegistrationFrameworkException(String message, Throwable cause) {
+    public RegistrationClientException(String message, Throwable cause) {
 
         super(message, cause);
     }
 
-    public RegistrationFrameworkException(Throwable cause) {
+    public RegistrationClientException(Throwable cause) {
 
         super(cause);
     }

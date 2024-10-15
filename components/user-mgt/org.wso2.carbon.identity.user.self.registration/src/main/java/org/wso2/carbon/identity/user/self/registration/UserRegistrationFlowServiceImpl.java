@@ -21,6 +21,7 @@ package org.wso2.carbon.identity.user.self.registration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.ExecutionState;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
@@ -34,6 +35,7 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.At
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.EmailOTPExecutor;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.PasswordOnboarder;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.AuthBasedSequenceLoader;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.model.RegistrationRequest;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.DefaultRegistrationSequenceHandler;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response.RegistrationResponse;
@@ -47,7 +49,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowService{
+import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.ErrorMessages.ERROR_SEQUENCE_NOT_DEFINED_FOR_APP;
+
+public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowService {
 
     private static final Log LOG = LogFactory.getLog(UserRegistrationFlowServiceImpl.class);
     private static final UserRegistrationFlowServiceImpl instance = new UserRegistrationFlowServiceImpl();
@@ -67,7 +71,8 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
         RegistrationContext context = RegistrationFrameworkUtils.initiateRegContext(appId, tenantDomain, type);
 
         RegistrationResponse response = RegistrationFrameworkUtils
-                .getRegistrationSeqHandler(context.getRegistrationSequence()).handle(new RegistrationRequest(), context);
+                .getRegistrationSeqHandler(context.getRegistrationSequence())
+                .handle(new RegistrationRequest(), context);
         RegistrationFrameworkUtils.addRegContextToCache(context);
         return response;
     }
@@ -78,7 +83,8 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
 
         RegistrationContext context = RegistrationFrameworkUtils.initiateRegContext(request);
         RegistrationResponse response = RegistrationFrameworkUtils
-                .getRegistrationSeqHandler(context.getRegistrationSequence()).handle(new RegistrationRequest(), context);
+                .getRegistrationSeqHandler(context.getRegistrationSequence())
+                .handle(new RegistrationRequest(), context);
         RegistrationFrameworkUtils.addRegContextToCache(context);
         return response;
     }
@@ -95,11 +101,11 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
         RegistrationResponse response = handler.handle(request, context);
         if (context.isCompleted()) {
             LOG.debug("Registration flow completed for flow id: " + request.getFlowId() +
-                    ". Hence clearing the cache.");
+                              ". Hence clearing the cache.");
             RegistrationFrameworkUtils.removeRegContextFromCache(request.getFlowId());
         } else {
             LOG.debug("Registration flow is not completed for flow id: " + request.getFlowId() +
-                    ". Hence updating the cache with the latest.");
+                              ". Hence updating the cache with the latest.");
             RegistrationFrameworkUtils.addRegContextToCache(context);
         }
         return response;
@@ -114,6 +120,13 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
         context.setRegSequence(sequence);
         context.setContextIdentifier(flowId);
 
+        if (sequence.getFirstNode() == null) {
+            throw new RegistrationServerException(ERROR_SEQUENCE_NOT_DEFINED_FOR_APP.getCode(),
+                                                  ERROR_SEQUENCE_NOT_DEFINED_FOR_APP.getMessage(),
+                                                  String.format(ERROR_SEQUENCE_NOT_DEFINED_FOR_APP.getDescription(),
+                                                                appId));
+        }
+
         NodeResponse response = sequence.execute(context);
         ExecutionState state = new ExecutionState();
         state.setFlowId(flowId);
@@ -124,16 +137,13 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
     }
 
     @Override
-    public ExecutionState triggerRegFlow(String flowId, Map<String, InputData> inputs) throws RegistrationFrameworkException {
+    public ExecutionState triggerRegFlow(String flowId, Map<String, InputData> inputs)
+            throws RegistrationFrameworkException {
 
         RegistrationContext context;
         RegSequence sequence;
-        if (flowId == null) {
-            throw new RegistrationFrameworkException("Invalid flow id.");
-        } else {
-            context = RegistrationFrameworkUtils.retrieveRegContextFromCache(flowId);
-            sequence = context.getRegSequence();
-        }
+        context = RegistrationFrameworkUtils.retrieveRegContextFromCache(flowId);
+        sequence = context.getRegSequence();
         if (!validateInputs(inputs, context)) {
             throw new RegistrationFrameworkException("Invalid inputs provided.");
         }
@@ -143,17 +153,22 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
         state.setFlowId(flowId);
         state.setResponse(response);
         // Save the current sequence in the context.
-
         RegistrationFrameworkUtils.addRegContextToCache(context);
         return state;
     }
 
     private RegSequence loadSequence(String appId) {
 
-        if ("case1".equals(appId) ) {
+        if ("case1".equals(appId)) {
             return loadSequence1();
-        } else {
+        } else if ("case2".equals(appId)) {
             return loadSequence2();
+        }
+        try {
+            return new AuthBasedSequenceLoader().deriveRegistrationSequence(appId);
+        } catch (RegistrationFrameworkException e) {
+            LOG.error("Error while loading the sequence for the app: " + appId, e);
+            return null;
         }
     }
 
@@ -177,7 +192,6 @@ public class UserRegistrationFlowServiceImpl implements UserRegistrationFlowServ
         TaskExecutionNode node3 = new TaskExecutionNode("node3", pwdOnboard);
         TaskExecutionNode node4 = new TaskExecutionNode("node4", emailOTPExecutor);
         TaskExecutionNode node5 = new TaskExecutionNode("node5", attrCollector2);
-
 
         node1.setNextNode(node2);
         node2.setNextNodes(new ArrayList<>(Arrays.asList(node3, node4)));

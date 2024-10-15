@@ -37,14 +37,19 @@ import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Cons
  */
 public class TaskExecutionNode extends AbstractNode implements InputCollectionNode {
 
-    private Executor executor; // Reference to the executor.Executor
+    private Executor executor;
 
-    public TaskExecutionNode(String name, Executor executor) {
+    public TaskExecutionNode(String id, Executor executor) {
 
-        setName(name);
+        setId(id);
         this.executor = executor;
     }
 
+    /**
+     * Get the executor associated with the node.
+     *
+     * @return  The executor associated with the node.
+     */
     public Executor getExecutor() {
 
         return executor;
@@ -58,19 +63,20 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
         if (executor == null) {
             throw new RegistrationFrameworkException("Executor not found for node");
         }
-        executorResponse = executor.process(inputData != null ? inputData.getUserInput() : null, context);
+        executorResponse = executor.execute(inputData != null ? inputData.getUserInput() : null, context);
 
         if (executorResponse != null && STATUS_USER_INPUT_REQUIRED.equals(executorResponse.getStatus())) {
             NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
-            response.addInputData(getName(), executorResponse.getRequiredData());
+            response.addInputData(getNodeId(), executorResponse.getRequiredData());
             return response;
         }
         if (executor instanceof AuthLinkedExecutor) {
-            context.addAuthenticatedMethod(((AuthLinkedExecutor) executor).getAssociatedAuthenticator());
+            context.addAuthenticatedMethod(((AuthLinkedExecutor) executor).getAuthMechanism());
         }
         return new NodeResponse(STATUS_NODE_COMPLETE);
     }
 
+    @Override
     public List<InputMetaData> getRequiredData() {
 
         return (executor != null) ? executor.declareRequiredData() : null;

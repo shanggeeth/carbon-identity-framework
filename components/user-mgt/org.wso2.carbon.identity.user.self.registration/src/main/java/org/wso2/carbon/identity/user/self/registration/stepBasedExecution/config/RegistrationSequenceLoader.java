@@ -20,6 +20,7 @@ package org.wso2.carbon.identity.user.self.registration.stepBasedExecution.confi
 
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegSequence;
 
 /**
  * This an interface for loading the registration sequences based on the configurations.
@@ -29,4 +30,5 @@ public interface RegistrationSequenceLoader {
     public RegistrationSequence loadRegistrationSequence(ServiceProvider serviceProvider) throws
                                                                                           RegistrationFrameworkException;
 
+    public RegSequence deriveRegistrationSequence(ServiceProvider serviceProvider) throws RegistrationFrameworkException;
 }

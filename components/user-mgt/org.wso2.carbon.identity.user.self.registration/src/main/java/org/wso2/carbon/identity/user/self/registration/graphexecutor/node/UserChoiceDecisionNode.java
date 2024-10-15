@@ -30,7 +30,9 @@ import java.util.List;
 
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_INPUT_REQUIRED;
 
-// node.UserChoiceDecisionNode class implementation
+/**
+ * Implementation of a node specific to prompting user to select a choice out of multiple registration executor options.
+ */
 public class UserChoiceDecisionNode extends AbstractNode implements InputCollectionNode {
 
     private List<TaskExecutionNode> nextNodes = new ArrayList<>(); // For branching paths
@@ -38,14 +40,35 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
 
     public UserChoiceDecisionNode(String name) {
 
-        setName(name);
+        setId(name);
     }
 
+    /**
+     * Set the nodes that are available for the user to choose from.
+     *
+     * @param nextNodes List of Task Executor Nodes.
+     */
     public void setNextNodes(List<TaskExecutionNode> nextNodes) {
 
         this.nextNodes = nextNodes;
     }
 
+
+    /**
+     * Get the nodes that are available for the user to choose from.
+     *
+     * @return List of Task Executor Nodes.
+     */
+    public List<TaskExecutionNode> getNextNodes() {
+
+        return this.nextNodes;
+    }
+
+    /**
+     * Add a node to the list of nodes available for the user to choose from.
+     *
+     * @param node Task Executor Node.
+     */
     public void addNextNode(TaskExecutionNode node) {
 
         this.nextNodes.add(node);
@@ -70,7 +93,7 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
             return new NodeResponse(Constants.STATUS_NODE_COMPLETE);
         } else {
             NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
-            response.addInputData(this.getName(), getRequiredData());
+            response.addInputData(this.getNodeId(), getRequiredData());
             return response;
         }
     }

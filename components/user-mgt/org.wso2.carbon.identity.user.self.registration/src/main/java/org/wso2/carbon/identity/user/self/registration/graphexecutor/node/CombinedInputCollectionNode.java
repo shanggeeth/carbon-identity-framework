@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
@@ -28,34 +29,48 @@ import java.util.List;
 
 import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_COMPLETE;
 
+/**
+ * Node to combine input requirements of multiple nodes and prompt.
+ */
 public class CombinedInputCollectionNode extends AbstractNode {
 
     private List<InputCollectionNode> referencedNodes = new ArrayList<>();; // For branching paths
 
-    public CombinedInputCollectionNode(String name) {
+    public CombinedInputCollectionNode(String id) {
 
-         setName(name);
+         setId(id);
     }
 
+    /**
+     * Set the list of nodes referenced by this node when prompting user input.
+     *
+     * @param refNodeList List of nodes referenced by this node.
+     */
     public void setReferencedNodes(List<InputCollectionNode> refNodeList) {
 
         this.referencedNodes = refNodeList;
     }
 
+    /**
+     * Add a node to the list of nodes referenced by this node when prompting user input.
+     *
+     * @param referencedNode Node to be added to the list of nodes referenced by this node.
+     */
     public void addReferencedNode(InputCollectionNode referencedNode) {
 
         referencedNodes.add(referencedNode);
     }
 
     @Override
-    public NodeResponse execute(InputData inputData, RegistrationContext context) {
+    public NodeResponse execute(InputData inputData, RegistrationContext context)
+            throws RegistrationFrameworkException {
 
         // Only declare the data required. So this node is complete.
         NodeResponse result = new NodeResponse(STATUS_NODE_COMPLETE);
         for (InputCollectionNode refNode : referencedNodes) {
             List<InputMetaData> dataRequired = refNode.getRequiredData();
             if (dataRequired != null) {
-                result.addInputData(refNode.getName(), dataRequired);
+                result.addInputData(refNode.getNodeId(), dataRequired);
             }
         }
         return result;

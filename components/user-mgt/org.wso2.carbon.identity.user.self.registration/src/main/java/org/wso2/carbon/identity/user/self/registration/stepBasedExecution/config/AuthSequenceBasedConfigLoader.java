@@ -27,6 +27,7 @@ import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorC
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfig;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegSequence;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.RegistrationStepExecutor;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.internal.UserRegistrationServiceDataHolder;
@@ -54,6 +55,11 @@ public class AuthSequenceBasedConfigLoader implements RegistrationSequenceLoader
     public static AuthSequenceBasedConfigLoader getInstance() {
 
         return instance;
+    }
+
+    public RegSequence deriveRegistrationSequence(ServiceProvider serviceProvider) throws RegistrationFrameworkException {
+
+        return null;
     }
 
     @Override

@@ -20,5 +20,5 @@ package org.wso2.carbon.identity.user.self.registration.graphexecutor.executor;
 
 public interface AuthLinkedExecutor extends Executor {
 
-    String getAssociatedAuthenticator();
+    String getAuthMechanism();
 }

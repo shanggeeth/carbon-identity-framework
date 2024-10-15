@@ -28,7 +28,8 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
-import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.AttributeCollectionRegStepExecutor;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.Executor;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.AttributeCollectionExecutor;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.RegistrationStepExecutor;
 import org.wso2.carbon.identity.user.self.registration.UserRegistrationFlowService;
 import org.wso2.carbon.identity.user.self.registration.UserRegistrationFlowServiceImpl;
@@ -57,8 +58,8 @@ public class UserRegistrationDSComponent {
         UserRegistrationFlowService registrationFlowService = UserRegistrationFlowServiceImpl.getInstance();
         bundleContext.registerService(UserRegistrationFlowService.class.getName(), registrationFlowService, null);
 
-        bundleContext.registerService(RegistrationStepExecutor.class.getName(),
-                AttributeCollectionRegStepExecutor.getInstance(), null);
+        AttributeCollectionExecutor attributeCollectionExecutor = new AttributeCollectionExecutor();
+        bundleContext.registerService(RegistrationStepExecutor.class.getName(), attributeCollectionExecutor, null);
     }
 
     @Deactivate
@@ -142,6 +143,22 @@ public class UserRegistrationDSComponent {
     protected void unsetRegistrationStepExecutor(RegistrationStepExecutor registrationStepExecutor) {
 
         UserRegistrationServiceDataHolder.getRegistrationStepExecutors().remove(registrationStepExecutor);
+    }
+
+    @Reference(
+            name = "RegistrationExecutor",
+            service = Executor.class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetRegistrationExecutor")
+    protected void setRegistrationExecutor(Executor registrationExecutor) {
+
+        UserRegistrationServiceDataHolder.getRegistrationExecutors().add(registrationExecutor);
+    }
+
+    protected void unsetRegistrationExecutor(Executor registrationExecutor) {
+
+        UserRegistrationServiceDataHolder.getRegistrationStepExecutors().remove(registrationExecutor);
     }
 }
 

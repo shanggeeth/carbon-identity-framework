@@ -23,21 +23,24 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.Input
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
 
+/**
+ * Abstract node implementation for the nodes in the registration flow graph.
+ */
 public abstract class AbstractNode implements Node {
 
-    private String name;
+    private String id;
     private Node nextNode;
     private Node previousNode;
 
-    public void setName(String name) {
+    public void setId(String id) {
 
-        this.name = name;
+        this.id = id;
     }
 
     @Override
-    public String getName() {
+    public String getNodeId() {
 
-        return this.name;
+        return this.id;
     }
 
     @Override
@@ -64,5 +67,11 @@ public abstract class AbstractNode implements Node {
 
         this.previousNode = previousNode;
 
+    }
+
+    @Override
+    public NodeResponse rollback(RegistrationContext context) throws RegistrationFrameworkException {
+
+        return null;
     }
 }

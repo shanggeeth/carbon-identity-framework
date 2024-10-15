@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response;
 
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.Message;
+
 /**
  * This class represents the response of a registration step executor.
  */

@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response;
 
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.Message;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationConstants;
 
 import java.util.ArrayList;

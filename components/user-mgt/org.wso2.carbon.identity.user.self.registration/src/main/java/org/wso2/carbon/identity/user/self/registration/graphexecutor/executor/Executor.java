@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.executor;
 
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
@@ -25,12 +26,15 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.Regis
 import java.util.List;
 import java.util.Map;
 
-// executor.Executor.java
+/**
+ * Interface for the registration executor which does an atomic task of the process.
+ */
 public interface Executor {
 
     String getName();
     List<InputMetaData> declareRequiredData();
 
-    ExecutorResponse process(Map<String, String> input, RegistrationContext context);
+    ExecutorResponse execute(Map<String, String> input, RegistrationContext context) throws
+                                                                                     RegistrationFrameworkException;
 
 }

@@ -38,13 +38,13 @@ public class PasswordOnboarder implements AuthLinkedExecutor {
         return "PasswordOnboarder";
     }
 
-    public String getAssociatedAuthenticator() {
+    public String getAuthMechanism() {
 
         return "BasicAuthenticator";
     }
 
     @Override
-    public ExecutorResponse process(Map<String, String> input, RegistrationContext context) {
+    public ExecutorResponse execute(Map<String, String> input, RegistrationContext context) {
 
         if (input != null && !input.isEmpty()) {
             inputMetaData.removeIf(
@@ -66,6 +66,8 @@ public class PasswordOnboarder implements AuthLinkedExecutor {
     public List<InputMetaData> declareRequiredData() {
 
         InputMetaData e1 = new InputMetaData("password", "credential", 1);
+        e1.setMandatory(true);
+        e1.setValidationRegex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$");
         inputMetaData.add(e1);
         return inputMetaData;
     }

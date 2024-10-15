@@ -18,57 +18,45 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.model;
 
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Model class to represent the response of an executor.
+ * Model class to represent the response of a node in the registration sequence.
  */
-public class ExecutorResponse {
+public class RegResponse {
 
     private String status;
-    private List<InputMetaData> requiredData;
-    private Message message;
+    private final LinkedHashMap<String, List<InputMetaData>> requiredDataMap =  new LinkedHashMap<>();
+    private String userAssertion;
 
-    public ExecutorResponse(String status) {
+    public RegResponse(String status) {
 
         this.status = status;
-        this.requiredData = new ArrayList<>();
     }
 
+    // Getters and Setters
     public String getStatus() {
-
         return status;
     }
 
     public void setStatus(String status) {
-
         this.status = status;
     }
 
-    public List<InputMetaData> getRequiredData() {
+    public void addInputData(String name, List<InputMetaData> requiredMetaDataList) {
 
-        return requiredData;
+        requiredDataMap.put(name, requiredMetaDataList);
     }
 
-    public void setRequiredData(List<InputMetaData> requiredData) {
+    public String getUserAssertion() {
 
-        this.requiredData = requiredData;
+        return userAssertion;
     }
 
-    public void addRequiredData(InputMetaData inputMetaData) {
+    public void setUserAssertion(String userAssertion) {
 
-        requiredData.add(inputMetaData);
-    }
-
-    public Message getMessage() {
-
-        return message;
-    }
-
-    public void setMessage(Message message) {
-
-        this.message = message;
+        this.userAssertion = userAssertion;
     }
 }
-

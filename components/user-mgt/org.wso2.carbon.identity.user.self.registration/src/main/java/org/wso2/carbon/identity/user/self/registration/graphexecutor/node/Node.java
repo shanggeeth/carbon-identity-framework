@@ -24,24 +24,61 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeR
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
 
 /**
- * Interface for a node in the graph executor.
+ * Interface for a node in the registration flow graph.
  */
 public interface Node {
 
-    String getName();
+    /**
+     * Get the unique identifier of the node.
+     *
+     * @return The unique identifier of the node.
+     */
+    String getNodeId();
 
+    /**
+     * Get the next node in the sequence.
+     *
+     * @return The next node in the sequence.
+     */
     Node getNextNode();
 
+    /**
+     * Set the next node in the sequence.
+     *
+     * @param nextNode The next node in the sequence.
+     */
     void setNextNode(Node nextNode);
 
+    /**
+     * Get the previous node in the sequence.
+     *
+     * @return The previous node in the sequence.
+     */
     Node getPreviousNode();
 
+    /**
+     * Set the previous node in the sequence.
+     *
+     * @param previousNode The previous node in the sequence.
+     */
     void setPreviousNode(Node previousNode);
 
+    /**
+     * Execute the node.
+     *
+     * @param inputs The input data.
+     * @param context The registration context.
+     * @return The response of the node.
+     * @throws RegistrationFrameworkException If an error occurs while executing the node.
+     */
     NodeResponse execute(InputData inputs, RegistrationContext context) throws RegistrationFrameworkException; // Placeholder for node-specific actions
 
-    default NodeResponse rollback(RegistrationContext context) {
-        return null;
-    }  // Placeholder for node-specific actions
 
+    /**
+     * Rollback the functionality of the node.
+     *
+     * @param context The registration context.
+     * @return The response of the node.
+     */
+    NodeResponse rollback(RegistrationContext context) throws RegistrationFrameworkException;
 }

@@ -41,13 +41,13 @@ public class EmailOTPExecutor implements AuthLinkedExecutor {
         return "EmailOTPVerifier";
     }
 
-    public String getAssociatedAuthenticator() {
+    public String getAuthMechanism() {
 
         return "EmailOTP";
     }
 
     @Override
-    public ExecutorResponse process(Map<String, String> input, RegistrationContext context) {
+    public ExecutorResponse execute(Map<String, String> input, RegistrationContext context) {
 
         // Implement the actual task logic here
         if (input != null && !input.isEmpty()) {

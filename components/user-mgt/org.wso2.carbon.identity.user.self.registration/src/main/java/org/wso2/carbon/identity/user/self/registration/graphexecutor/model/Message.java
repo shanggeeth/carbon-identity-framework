@@ -16,9 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.stepBasedExecution.response;
-
-import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.util.RegistrationConstants;
+package org.wso2.carbon.identity.user.self.registration.graphexecutor.model;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,50 +26,46 @@ import java.util.Map;
  */
 public class Message {
 
-    private RegistrationConstants.MessageType type;
-    private String messageId;
-    private String message;
+    private String type;
+    private String id;
+    private String content;
     private Map<String, String> context = new HashMap<>();
-    private String i18nkey;
+    private String i18nKey;
 
-    public Message() {
-
-    }
-
-    public Message(RegistrationConstants.MessageType type, String message) {
+    public Message(String type, String message) {
 
         this.type = type;
-        this.message = message;
+        this.content = message;
     }
 
-    public RegistrationConstants.MessageType getType() {
+    public String getType() {
 
         return type;
     }
 
-    public void setType(RegistrationConstants.MessageType type) {
+    public void setType(String type) {
 
         this.type = type;
     }
 
-    public String getMessageId() {
+    public String getId() {
 
-        return messageId;
+        return id;
     }
 
-    public void setMessageId(String messageId) {
+    public void setId(String id) {
 
-        this.messageId = messageId;
+        this.id = id;
     }
 
-    public String getMessage() {
+    public String getContent() {
 
-        return message;
+        return content;
     }
 
-    public void setMessage(String message) {
+    public void setContent(String content) {
 
-        this.message = message;
+        this.content = content;
     }
 
     public Map<String, String> getContext() {
@@ -84,13 +78,13 @@ public class Message {
         this.context = context;
     }
 
-    public String getI18nkey() {
+    public String getI18nKey() {
 
-        return i18nkey;
+        return i18nKey;
     }
 
-    public void setI18nkey(String i18nkey) {
+    public void setI18nKey(String i18nKey) {
 
-        this.i18nkey = i18nkey;
+        this.i18nKey = i18nKey;
     }
 }

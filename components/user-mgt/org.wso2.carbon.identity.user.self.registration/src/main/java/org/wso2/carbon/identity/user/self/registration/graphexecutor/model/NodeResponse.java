@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.model;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +28,9 @@ import java.util.Map;
 public class NodeResponse {
 
     private String status;
-    private final Map<String, List<InputMetaData>> inputDataMap =  new HashMap<>();
+    private final LinkedHashMap<String, List<InputMetaData>> inputDataMap =  new LinkedHashMap<>();
+    private String userAssertion;
+    private Message message;
 
     public NodeResponse(String status) {
 
@@ -52,5 +54,25 @@ public class NodeResponse {
     public void addInputData(String name, List<InputMetaData> inputMetaDataList) {
 
         inputDataMap.put(name, inputMetaDataList);
+    }
+
+    public String getUserAssertion() {
+
+        return userAssertion;
+    }
+
+    public void setUserAssertion(String userAssertion) {
+
+        this.userAssertion = userAssertion;
+    }
+
+    public Message getMessage() {
+
+        return message;
+    }
+
+    public void setMessage(Message message) {
+
+        this.message = message;
     }
 }

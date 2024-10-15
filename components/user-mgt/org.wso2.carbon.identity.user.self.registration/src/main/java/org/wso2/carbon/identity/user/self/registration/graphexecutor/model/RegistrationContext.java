@@ -281,7 +281,6 @@ public class RegistrationContext implements Serializable {
      */
     public void updateRequiredDataWithInputs(Map<String, InputData> inputDataMap) {
 
-        //Loop through the input data map and update the required data list and user input list.
         for (Map.Entry<String, InputData> entry : inputDataMap.entrySet()) {
             if (entry.getValue() != null) {
                 requiredMetaData.remove(entry.getKey());

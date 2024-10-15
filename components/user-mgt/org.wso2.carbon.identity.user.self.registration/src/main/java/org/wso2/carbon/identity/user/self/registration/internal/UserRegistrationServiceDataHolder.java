@@ -19,6 +19,7 @@
 package org.wso2.carbon.identity.user.self.registration.internal;
 
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.Executor;
 import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.RegistrationStepExecutor;
 import org.wso2.carbon.user.core.service.RealmService;
 
@@ -28,6 +29,7 @@ import java.util.List;
 public class UserRegistrationServiceDataHolder {
 
     private static final List<RegistrationStepExecutor> registrationStepExecutors = new ArrayList<>();
+    private static final List<Executor> regExecutors = new ArrayList<>();
     private static ApplicationManagementService applicationManagementService;
     private static RealmService realmService = null;
 
@@ -35,6 +37,12 @@ public class UserRegistrationServiceDataHolder {
 
         // TODO: 9/27/17 do the null check
         return registrationStepExecutors;
+    }
+
+    public static List<Executor> getRegistrationExecutors() {
+
+        // TODO: 9/27/17 do the null check
+        return regExecutors;
     }
 
     public static ApplicationManagementService getApplicationManagementService() {
