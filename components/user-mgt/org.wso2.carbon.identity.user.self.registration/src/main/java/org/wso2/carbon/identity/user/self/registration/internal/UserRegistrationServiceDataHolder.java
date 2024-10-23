@@ -19,48 +19,63 @@
 package org.wso2.carbon.identity.user.self.registration.internal;
 
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.Executor;
-import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.RegistrationStepExecutor;
+import org.wso2.carbon.identity.user.self.registration.executor.Executor;
 import org.wso2.carbon.user.core.service.RealmService;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Data holder for the User Registration Service.
+ */
 public class UserRegistrationServiceDataHolder {
 
-    private static final List<RegistrationStepExecutor> registrationStepExecutors = new ArrayList<>();
-    private static final List<Executor> regExecutors = new ArrayList<>();
+    private static final List<Executor> executors = new ArrayList<>();
     private static ApplicationManagementService applicationManagementService;
-    private static RealmService realmService = null;
+    private static RealmService realmService;
 
-    public static List<RegistrationStepExecutor> getRegistrationStepExecutors() {
-
-        // TODO: 9/27/17 do the null check
-        return registrationStepExecutors;
-    }
-
-    public static List<Executor> getRegistrationExecutors() {
+    public static List<Executor> getExecutors() {
 
         // TODO: 9/27/17 do the null check
-        return regExecutors;
+        return executors;
     }
 
+    /**
+     * Add executors to the list.
+     *
+     * @return  List of executors.
+     */
     public static ApplicationManagementService getApplicationManagementService() {
 
         // TODO: 9/27/17 do the null check
-        return UserRegistrationServiceDataHolder.applicationManagementService;
+        return applicationManagementService;
     }
 
-    public static void setApplicationManagementService(ApplicationManagementService applicationManagementService) {
+    /**
+     * Set the application management service.
+     *
+     * @param appMgtService Application management service.
+     */
+    public static void setApplicationManagementService(ApplicationManagementService appMgtService) {
 
-        UserRegistrationServiceDataHolder.applicationManagementService = applicationManagementService;
+        applicationManagementService = appMgtService;
     }
 
+    /**
+     * Get the realm service.
+     *
+     * @return Realm service.
+     */
     public static RealmService getRealmService() {
 
         return realmService;
     }
 
+    /**
+     * Set the realm service.
+     *
+     * @param realmService  Realm service.
+     */
     public static void setRealmService(RealmService realmService) {
 
         UserRegistrationServiceDataHolder.realmService = realmService;

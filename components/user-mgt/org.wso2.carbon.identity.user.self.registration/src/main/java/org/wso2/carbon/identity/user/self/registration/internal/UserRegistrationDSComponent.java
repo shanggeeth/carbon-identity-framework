@@ -28,11 +28,9 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.Executor;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.AttributeCollectionExecutor;
-import org.wso2.carbon.identity.user.self.registration.stepBasedExecution.RegistrationStepExecutor;
 import org.wso2.carbon.identity.user.self.registration.UserRegistrationFlowService;
-import org.wso2.carbon.identity.user.self.registration.UserRegistrationFlowServiceImpl;
+import org.wso2.carbon.identity.user.self.registration.executor.Executor;
+import org.wso2.carbon.identity.user.self.registration.executor.impl.AttributeCollectorImpl;
 import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.user.core.service.RealmService;
 
@@ -53,13 +51,10 @@ public class UserRegistrationDSComponent {
     @Activate
     protected void activate(ComponentContext context) {
 
+        AttributeCollectorImpl attributeCollectionExecutor = new AttributeCollectorImpl();
         bundleContext = context.getBundleContext();
-
-        UserRegistrationFlowService registrationFlowService = UserRegistrationFlowServiceImpl.getInstance();
-        bundleContext.registerService(UserRegistrationFlowService.class.getName(), registrationFlowService, null);
-
-        AttributeCollectionExecutor attributeCollectionExecutor = new AttributeCollectionExecutor();
-        bundleContext.registerService(RegistrationStepExecutor.class.getName(), attributeCollectionExecutor, null);
+        bundleContext.registerService(UserRegistrationFlowService.class.getName(), UserRegistrationFlowService.getInstance(), null);
+        bundleContext.registerService(Executor.class.getName(), attributeCollectionExecutor, null);
     }
 
     @Deactivate
@@ -130,35 +125,19 @@ public class UserRegistrationDSComponent {
     }
 
     @Reference(
-            name = "RegistrationStepExecutor",
-            service = RegistrationStepExecutor.class,
-            cardinality = ReferenceCardinality.MULTIPLE,
-            policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetRegistrationStepExecutor")
-    protected void setRegistrationStepExecutor(RegistrationStepExecutor registrationStepExecutor) {
-
-        UserRegistrationServiceDataHolder.getRegistrationStepExecutors().add(registrationStepExecutor);
-    }
-
-    protected void unsetRegistrationStepExecutor(RegistrationStepExecutor registrationStepExecutor) {
-
-        UserRegistrationServiceDataHolder.getRegistrationStepExecutors().remove(registrationStepExecutor);
-    }
-
-    @Reference(
-            name = "RegistrationExecutor",
+            name = "Executor",
             service = Executor.class,
             cardinality = ReferenceCardinality.MULTIPLE,
             policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetRegistrationExecutor")
-    protected void setRegistrationExecutor(Executor registrationExecutor) {
+            unbind = "unsetExecutors")
+    protected void setExecutors(Executor executor) {
 
-        UserRegistrationServiceDataHolder.getRegistrationExecutors().add(registrationExecutor);
+        UserRegistrationServiceDataHolder.getExecutors().add(executor);
     }
 
-    protected void unsetRegistrationExecutor(Executor registrationExecutor) {
+    protected void unsetExecutors(Executor executor) {
 
-        UserRegistrationServiceDataHolder.getRegistrationStepExecutors().remove(registrationExecutor);
+        UserRegistrationServiceDataHolder.getExecutors().remove(executor);
     }
 }
 

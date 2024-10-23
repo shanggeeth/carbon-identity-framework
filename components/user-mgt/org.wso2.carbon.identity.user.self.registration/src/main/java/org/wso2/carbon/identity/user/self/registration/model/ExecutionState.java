@@ -16,22 +16,36 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
+package org.wso2.carbon.identity.user.self.registration.model;// model.ExecutionState.java
 
-import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
+public class ExecutionState {
 
-import java.util.List;
+    private String flowId;
+    private NodeResponse response;
 
-/**
- * Interface for a node in the registration flow graph that collects input data.
- */
-public interface InputCollectionNode extends Node {
+    public ExecutionState(String flowId, NodeResponse response) {
 
-    /**
-     * Get the list of data required for the node along with the metadata.
-     *
-     * @return  The list of data required for the node along with the metadata.
-     */
-    List<InputMetaData> getRequiredData() throws RegistrationFrameworkException;
+        this.flowId = flowId;
+        this.response = response;
+    }
+
+    public String getFlowId() {
+
+        return flowId;
+    }
+
+    public void setFlowId(String flowId) {
+
+        this.flowId = flowId;
+    }
+
+    public NodeResponse getResponse() {
+
+        return response;
+    }
+
+    public void setResponse(NodeResponse response) {
+
+        this.response = response;
+    }
 }

@@ -18,26 +18,36 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
-import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.AuthLinkedExecutor;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.ExecutorResponse;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.Executor;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
-
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.ErrorMessages.ERROR_EXECUTOR_NOT_FOUND;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_CRED_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NODE_COMPLETE;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NOT_STARTED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_USER_INPUT_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_VERIFICATION_REQUIRED;
 import java.util.List;
-
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_COMPLETE;
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_INPUT_REQUIRED;
+import java.util.Map;
+import org.wso2.carbon.identity.user.self.registration.action.Authentication;
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.self.registration.action.AttributeCollection;
+import org.wso2.carbon.identity.user.self.registration.action.CredentialEnrollment;
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
+import org.wso2.carbon.identity.user.self.registration.executor.Executor;
+import org.wso2.carbon.identity.user.self.registration.action.Verification;
+import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
+import org.wso2.carbon.identity.user.self.registration.model.InitData;
+import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
+import org.wso2.carbon.identity.user.self.registration.model.InputData;
+import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
+import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 /**
  * Implementation of a node specific to executing a registration executor.
  */
 public class TaskExecutionNode extends AbstractNode implements InputCollectionNode {
 
-    private Executor executor;
+    private final Executor executor;
 
     public TaskExecutionNode(String id, Executor executor) {
 
@@ -59,19 +69,21 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
     public NodeResponse execute(InputData inputData, RegistrationContext context)
             throws RegistrationFrameworkException {
 
-        ExecutorResponse executorResponse;
         if (executor == null) {
-            throw new RegistrationFrameworkException("Executor not found for node");
+            throw new RegistrationServerException(ERROR_EXECUTOR_NOT_FOUND.getCode(),
+                                                  ERROR_EXECUTOR_NOT_FOUND.getMessage(),
+                                                  String.format(ERROR_EXECUTOR_NOT_FOUND.getDescription(),
+                                                                   getNodeId()));
         }
-        executorResponse = executor.execute(inputData != null ? inputData.getUserInput() : null, context);
+        ExecutorResponse executorResponse = triggerExecutor(inputData, context);
 
-        if (executorResponse != null && STATUS_USER_INPUT_REQUIRED.equals(executorResponse.getStatus())) {
+        if (STATUS_USER_INPUT_REQUIRED.equals(executorResponse.getStatus())) {
             NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
-            response.addInputData(getNodeId(), executorResponse.getRequiredData());
+            response.addInputMetaData(getNodeId(), executorResponse.getRequiredData());
             return response;
         }
-        if (executor instanceof AuthLinkedExecutor) {
-            context.addAuthenticatedMethod(((AuthLinkedExecutor) executor).getAuthMechanism());
+        if (executor instanceof Authentication) {
+            context.addAuthenticatedMethod(executor.getName());
         }
         return new NodeResponse(STATUS_NODE_COMPLETE);
     }
@@ -79,6 +91,49 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
     @Override
     public List<InputMetaData> getRequiredData() {
 
-        return (executor != null) ? executor.declareRequiredData() : null;
+        if (executor != null && executor instanceof AttributeCollection) {
+            AttributeCollection attributeCollection = (AttributeCollection) executor;
+            InitData response = attributeCollection.getAttrCollectInitData();
+            return response.getRequiredData();
+        }
+        return null;
+    }
+
+    private ExecutorResponse triggerExecutor(InputData inputData, RegistrationContext context)
+            throws RegistrationFrameworkException {
+
+        String executorStatus = context.getExecutorStatus();
+        Map<String, String> inputs = inputData != null ? inputData.getUserInput() : null;
+        ExecutorResponse response ;
+         if ((STATUS_NOT_STARTED.equals(executorStatus) || STATUS_ATTR_REQUIRED.equals(executorStatus)) &&
+                 executor instanceof AttributeCollection) {
+             response = ((AttributeCollection) executor).collect(inputs, context);
+             if (!STATUS_ACTION_COMPLETE.equals(response.getStatus())) {
+                 context.setExecutorStatus(response.getStatus());
+                 response.setStatus(STATUS_USER_INPUT_REQUIRED);
+                 return response;
+             }
+         }
+        if ((STATUS_NOT_STARTED.equals(executorStatus) || STATUS_CRED_REQUIRED.equals(executorStatus)) &&
+                executor instanceof CredentialEnrollment) {
+            response = ((CredentialEnrollment) executor).enrollCredential(inputs, context);
+            if (!STATUS_ACTION_COMPLETE.equals(response.getStatus())) {
+                context.setExecutorStatus(response.getStatus());
+                response.setStatus(STATUS_USER_INPUT_REQUIRED);
+                return response;
+            }
+        }
+        if ((STATUS_NOT_STARTED.equals(executorStatus) || STATUS_VERIFICATION_REQUIRED.equals(executorStatus)) &&
+                executor instanceof Verification) {
+
+             response = ((Verification) executor).verify(inputs, context);
+                if (!STATUS_ACTION_COMPLETE.equals(response.getStatus())) {
+                    context.setExecutorStatus(response.getStatus());
+                    response.setStatus(STATUS_USER_INPUT_REQUIRED);
+                    return response;
+                }
+        }
+        // If the executor is not an instance of any of the above classes, there's nothing to execute.
+        return new ExecutorResponse(STATUS_NODE_COMPLETE);
     }
 }

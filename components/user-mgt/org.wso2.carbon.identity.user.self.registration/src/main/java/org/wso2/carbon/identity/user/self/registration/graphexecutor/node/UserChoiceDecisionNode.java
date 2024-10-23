@@ -18,17 +18,17 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.executor.Executor;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.util.Constants;
+import org.wso2.carbon.identity.user.self.registration.executor.Executor;
+import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
+import org.wso2.carbon.identity.user.self.registration.model.InputData;
+import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
+import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_USER_INPUT_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_USER_INPUT_REQUIRED;
 
 /**
  * Implementation of a node specific to prompting user to select a choice out of multiple registration executor options.
@@ -38,9 +38,9 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
     private List<TaskExecutionNode> nextNodes = new ArrayList<>(); // For branching paths
     private static final String USER_CHOICE = "user-choice";
 
-    public UserChoiceDecisionNode(String name) {
+    public UserChoiceDecisionNode(String id) {
 
-        setId(name);
+        setId(id);
     }
 
     /**
@@ -52,7 +52,6 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
 
         this.nextNodes = nextNodes;
     }
-
 
     /**
      * Get the nodes that are available for the user to choose from.
@@ -91,11 +90,10 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
         }
         if (getNextNode() != null) {
             return new NodeResponse(Constants.STATUS_NODE_COMPLETE);
-        } else {
-            NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
-            response.addInputData(this.getNodeId(), getRequiredData());
-            return response;
         }
+        NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
+        response.addInputMetaData(this.getNodeId(), getRequiredData());
+        return response;
     }
 
     @Override
@@ -111,8 +109,8 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
         for (TaskExecutionNode nextNode : nextNodes) {
             meta.addOption(nextNode.getExecutor().getName());
         }
-        List<InputMetaData> input = new ArrayList<>();
-        input.add(meta);
-        return input;
+        List<InputMetaData> inputMetaList = new ArrayList<>();
+        inputMetaList.add(meta);
+        return inputMetaList;
     }
 }

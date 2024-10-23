@@ -19,15 +19,15 @@
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputMetaData;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
+import org.wso2.carbon.identity.user.self.registration.model.InputData;
+import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
+import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.wso2.carbon.identity.user.self.registration.graphexecutor.Constants.STATUS_NODE_COMPLETE;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NODE_COMPLETE;
 
 /**
  * Node to combine input requirements of multiple nodes and prompt.
@@ -70,7 +70,7 @@ public class CombinedInputCollectionNode extends AbstractNode {
         for (InputCollectionNode refNode : referencedNodes) {
             List<InputMetaData> dataRequired = refNode.getRequiredData();
             if (dataRequired != null) {
-                result.addInputData(refNode.getNodeId(), dataRequired);
+                result.addInputMetaData(refNode.getNodeId(), dataRequired);
             }
         }
         return result;

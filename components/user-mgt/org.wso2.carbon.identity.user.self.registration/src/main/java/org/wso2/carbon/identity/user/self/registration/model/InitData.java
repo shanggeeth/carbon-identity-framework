@@ -16,32 +16,41 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.cache;
+package org.wso2.carbon.identity.user.self.registration.model;
 
-import org.wso2.carbon.identity.core.cache.CacheEntry;
-import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
+import java.util.List;
 
 /**
- * Cache entry for RegistrationContext.
+ * Object holing the initialization data for actions.
  */
-public class RegistrationContextCacheEntry extends CacheEntry {
+public class InitData {
 
-    private static final long serialVersionUID = 9071624974136245647L;
+    private String action;
+    private List<InputMetaData> requiredData;
 
-    RegistrationContext context;
+    public InitData(String action, List<InputMetaData> requiredData) {
 
-    public RegistrationContextCacheEntry(RegistrationContext context) {
-
-        this.context = context;
+        this.action = action;
+        this.requiredData = requiredData;
     }
 
-    public RegistrationContext getContext() {
+    public String getAction() {
 
-        return context;
+        return action;
     }
 
-    public void setContext(RegistrationContext context) {
+    public void setAction(String action) {
 
-        this.context = context;
+        this.action = action;
+    }
+
+    public List<InputMetaData> getRequiredData() {
+
+        return requiredData;
+    }
+
+    public void setRequiredData(List<InputMetaData> requiredData) {
+
+        this.requiredData = requiredData;
     }
 }

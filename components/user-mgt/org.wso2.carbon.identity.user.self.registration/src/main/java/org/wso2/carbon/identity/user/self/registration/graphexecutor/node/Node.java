@@ -19,9 +19,9 @@
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.InputData;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.NodeResponse;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.model.InputData;
+import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
+import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 /**
  * Interface for a node in the registration flow graph.

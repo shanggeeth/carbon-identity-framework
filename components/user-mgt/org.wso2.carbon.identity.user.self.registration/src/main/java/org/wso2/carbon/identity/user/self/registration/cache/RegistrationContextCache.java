@@ -37,24 +37,44 @@ public class RegistrationContextCache extends BaseCache<RegistrationContextCache
             super(cacheName, isTemporary);
     }
 
+    /**
+     * Get instance of RegistrationContextCache.
+     */
     public static RegistrationContextCache getInstance() {
 
         LOG.debug("Returning instance of RegistrationContextCache");
         return instance;
     }
 
+    /**
+     * Add the RegistrationContextCacheEntry to the cache.
+     *
+     * @param key   Registration context cache key.
+     * @param entry Registration context cache entry.
+     */
     public void addToCache(RegistrationContextCacheKey key, RegistrationContextCacheEntry entry) {
 
         String tenantName = FrameworkUtils.getLoginTenantDomainFromContext();
         super.addToCache(key, entry, tenantName);
     }
 
+    /**
+     * Get the RegistrationContextCacheEntry from the cache for the given key.
+     *
+     * @param key   Registration context cache key.
+     * @return Registration context cache entry.
+     */
     public RegistrationContextCacheEntry getValueFromCache(RegistrationContextCacheKey key) {
 
         String tenantName = FrameworkUtils.getLoginTenantDomainFromContext();
         return super.getValueFromCache(key, tenantName);
     }
 
+    /**
+     * Clear the cache entry for the given key.
+     *
+     * @param key   Registration context cache key.
+     */
     public void clearCacheEntry(RegistrationContextCacheKey key) {
 
         String tenantName = FrameworkUtils.getLoginTenantDomainFromContext();

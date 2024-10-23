@@ -16,22 +16,33 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
-
-import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
-
-import java.util.List;
+package org.wso2.carbon.identity.user.self.registration.model;
 
 /**
- * Interface for a node in the registration flow graph that collects input data.
+ * This class represents the registration option.
  */
-public interface InputCollectionNode extends Node {
+public class RegOption {
 
-    /**
-     * Get the list of data required for the node along with the metadata.
-     *
-     * @return  The list of data required for the node along with the metadata.
-     */
-    List<InputMetaData> getRequiredData() throws RegistrationFrameworkException;
+    private String value;
+    private String i18nKey;
+
+    public String getValue() {
+
+        return value;
+    }
+
+    public void setValue(String value) {
+
+        this.value = value;
+    }
+
+    public String getI18nKey() {
+
+        return i18nKey;
+    }
+
+    public void setI18nKey(String i18nKey) {
+
+        this.i18nKey = i18nKey;
+    }
 }
