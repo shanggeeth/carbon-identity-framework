@@ -20,6 +20,7 @@ package org.wso2.carbon.identity.user.self.registration.temp;
 
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_VERIFICATION_REQUIRED;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,8 @@ import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext
 
 public class EmailOTPExecutorTest implements Authentication, AttributeCollection, Verification {
 
-    private final String EMAIL_ADDRESS = "emailaddress";
+    private final String EMAIL_ADDRESS = "http://wso2.org/claims/emailaddress";
+    private final String EMAIL_VERIFIED_CLAIM_URI = "http://wso2.org/claims/emailverified";
     private final String EMAIL_OTP = "email-otp";
 
     public String getName() {
@@ -48,23 +50,32 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
     }
 
     @Override
-    public ExecutorResponse authenticate(Map<String, String> input, RegistrationContext context) {
+    public ExecutorResponse authenticate(RegistrationContext context) {
 
         return  null;
     }
 
     @Override
-    public ExecutorResponse collect(Map<String, String> input, RegistrationContext context) {
+    public ExecutorResponse collect(RegistrationContext context) {
+
+        Map<String, String> userInputs = context.getUserInputData();
+        ExecutorResponse response = new ExecutorResponse();
 
         // Implement the actual task logic here
-        if (input != null && !input.isEmpty() && input.containsKey(EMAIL_ADDRESS)) {
-                // Store the email address in the context
-                // Update the required data
-            return new ExecutorResponse(STATUS_ACTION_COMPLETE);
+        if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
+            if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(EMAIL_ADDRESS)) {
+                response.setResult(STATUS_ACTION_COMPLETE);
+                response.addUpdatedUserClaims(EMAIL_ADDRESS, userInputs.get(EMAIL_ADDRESS));
+                return response;
+            }
         }
-        ExecutorResponse executorResponse = new ExecutorResponse(STATUS_ATTR_REQUIRED);
-        executorResponse.setRequiredData(getEmailMetaData());
-        return executorResponse;
+        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
+            response.setResult(STATUS_ATTR_REQUIRED);
+            response.setRequiredData(getEmailMetaData());
+            return response;
+        }
+        response.setResult("ERROR");
+        return response;
     }
 
 
@@ -86,17 +97,27 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
     }
 
     @Override
-    public ExecutorResponse verify(Map<String, String> input, RegistrationContext context) {
+    public ExecutorResponse verify(RegistrationContext context) {
+
+        Map<String, String> userInputs = context.getUserInputData();
+        ExecutorResponse response = new ExecutorResponse();
 
         // Implement the actual task logic here
-        if (input != null && !input.isEmpty() && input.containsKey(EMAIL_OTP)) {
-            // Validate OTP
-            return new ExecutorResponse(STATUS_ACTION_COMPLETE);
-         }
-
-        ExecutorResponse executorResponse = new ExecutorResponse(STATUS_VERIFICATION_REQUIRED);
-        executorResponse.setRequiredData(getOTPMetaData());
-        return executorResponse;
+        if (STATUS_VERIFICATION_REQUIRED.equals(context.getExecutorStatus())) {
+            if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(EMAIL_OTP)) {
+                response.setResult(STATUS_ACTION_COMPLETE);
+                response.addUpdatedUserClaims(EMAIL_VERIFIED_CLAIM_URI, "true");
+                return response;
+            }
+        }
+        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
+            response.setResult(STATUS_VERIFICATION_REQUIRED);
+            response.setRequiredData(getOTPMetaData());
+            response.addContextProperty(EMAIL_OTP, "12345");
+            return response;
+        }
+        response.setResult("ERROR");
+        return response;
     }
 
     @Override

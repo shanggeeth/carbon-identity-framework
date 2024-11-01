@@ -31,10 +31,8 @@ public class RegistrationRequestedUser implements Serializable {
     private static final long serialVersionUID = -1873658743998134877L;
 
     private String username;
-    private boolean isPasswordless = true;
-    private String credential;
-    private Map<String, String> claims = new HashMap<>();
-    private List<String> statusList = new ArrayList<>();
+    private final Map<String, Object> claims = new HashMap<>();
+    private final Map<String, String> userCredentials = new HashMap<>();
 
     public String getUsername() {
 
@@ -48,27 +46,17 @@ public class RegistrationRequestedUser implements Serializable {
         this.claims.put(RegistrationConstants.USERNAME_CLAIM_URI, username);
     }
 
-    public String getCredential() {
-
-        return credential;
-    }
-
-    public void setCredential(String credential) {
-
-        this.credential = credential;
-    }
-
-    public Map<String, String> getClaims() {
+    public Map<String, Object> getClaims() {
 
         return claims;
     }
 
-    public void setClaims(Map<String, String> claims) {
+    public void addClaims(Map<String, Object> claims) {
 
-        this.claims = claims;
+        this.claims.putAll(claims);
     }
 
-    public String getClaim(String claimUri) {
+    public Object getClaim(String claimUri) {
 
         return this.claims.get(claimUri);
     }
@@ -78,13 +66,18 @@ public class RegistrationRequestedUser implements Serializable {
         this.claims.put(claimUri, claimValue);
     }
 
-    public boolean isPasswordless() {
+    public Map<String, String> getUserCredentials() {
 
-        return isPasswordless;
+        return userCredentials;
     }
 
-    public void setPasswordless(boolean isPasswordless) {
+    public void addUserCredentials(Map<String, String> credentials) {
 
-        this.isPasswordless = isPasswordless;
+        this.userCredentials.putAll(credentials);
+    }
+
+    public void addUserCredential(String key, String value) {
+
+        this.userCredentials.put(key, value);
     }
 }

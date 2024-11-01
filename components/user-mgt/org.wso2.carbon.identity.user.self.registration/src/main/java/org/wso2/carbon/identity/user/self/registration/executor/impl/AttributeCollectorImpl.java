@@ -20,6 +20,7 @@ package org.wso2.carbon.identity.user.self.registration.executor.impl;
 
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ public class AttributeCollectorImpl implements AttributeCollection {
     }
 
     public AttributeCollectorImpl(String name) {
+
         this.name = name;
     }
 
@@ -58,21 +60,25 @@ public class AttributeCollectorImpl implements AttributeCollection {
     }
 
     @Override
-    public ExecutorResponse collect(Map<String, String> input, RegistrationContext context) {
+    public ExecutorResponse collect(RegistrationContext context) {
 
-
-        // Implement the actual task logic here
-        if (input != null && !input.isEmpty()) {
-            requiredData.removeIf(
-                    data -> input.containsKey(data.getName()) && input.get(data.getName()) != null && !input.get(
-                            data.getName()).isEmpty());
-            return new ExecutorResponse(STATUS_ACTION_COMPLETE);
+        ExecutorResponse response = new ExecutorResponse();
+        if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
+            Map<String, String> input = context.getUserInputData();
+            requiredData.removeIf(data -> {
+                if (input.containsKey(data.getName()) && input.get(data.getName()) != null) {
+                    response.addUpdatedUserClaims(data.getName(), input.get(data.getName()));
+                    return true;
+                }
+                return false;
+            });
+            response.setResult(STATUS_ACTION_COMPLETE);
+            return response;
         }
-
-        if (!requiredData.isEmpty()) {
-            ExecutorResponse inputs = new ExecutorResponse(STATUS_ATTR_REQUIRED);
-            inputs.setRequiredData(requiredData);
-            return inputs;
+        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
+            response.setResult(STATUS_ATTR_REQUIRED);
+            response.setRequiredData(requiredData);
+            return response;
         }
         return new ExecutorResponse("ERROR");
     }

@@ -32,11 +32,10 @@ public interface Authentication extends Executor {
     /**
      * Perform an authenticate action with the given input and update the context.
      *
-     * @param input   Input data.
      * @param context Registration context.
      * @return ExecutorResponse.
      */
-    ExecutorResponse authenticate(Map<String, String> input, RegistrationContext context);
+    ExecutorResponse authenticate(RegistrationContext context);
 
     /**
      * Get the initial data required for authentication.

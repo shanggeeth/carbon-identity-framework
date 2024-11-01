@@ -62,7 +62,7 @@ public class CombinedInputCollectionNode extends AbstractNode {
     }
 
     @Override
-    public NodeResponse execute(InputData inputData, RegistrationContext context)
+    public NodeResponse execute(RegistrationContext context)
             throws RegistrationFrameworkException {
 
         // Only declare the data required. So this node is complete.

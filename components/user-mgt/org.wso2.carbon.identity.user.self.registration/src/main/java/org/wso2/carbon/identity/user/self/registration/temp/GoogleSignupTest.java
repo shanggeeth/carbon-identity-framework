@@ -18,6 +18,10 @@
 
 package org.wso2.carbon.identity.user.self.registration.temp;
 
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_CRED_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,19 +32,14 @@ import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_CRED_REQUIRED;
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 
-public class PasswordOnboarderTest implements Authentication, AttributeCollection, CredentialEnrollment {
+public class GoogleSignupTest implements Authentication, AttributeCollection {
 
-    private static final String USERNAME = "http://wso2.org/claims/username";
-    private static final String PASSWORD = "password";
+    private static final String ID_TOKEN = "google_id_token";
 
     public String getName() {
 
-        return "PasswordOnboard";
+        return "GoogleOIDCAuthenticator";
     }
 
     @Override
@@ -57,64 +56,35 @@ public class PasswordOnboarderTest implements Authentication, AttributeCollectio
 
         // Implement the actual task logic here
         if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
-            if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(USERNAME)) {
+            if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(ID_TOKEN)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
-                response.addUpdatedUserClaims(USERNAME, userInputs.get(USERNAME));
+                response.addUpdatedUserClaims("claimURI", "valueFromIDToken");
                 return response;
             }
         }
         if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
             response.setResult(STATUS_ATTR_REQUIRED);
-            response.setRequiredData(getUsernameData());
+            response.setRequiredData(getIdTokenRequirement());
             return response;
         }
         response.setResult("ERROR");
         return response;
     }
 
-    @Override
-    public ExecutorResponse enrollCredential(RegistrationContext context) {
-
-        Map<String, String> userInputs = context.getUserInputData();
-        ExecutorResponse response = new ExecutorResponse();
-
-        // Implement the actual task logic here
-        if (STATUS_CRED_REQUIRED.equals(context.getExecutorStatus())) {
-            if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(PASSWORD)) {
-                response.setResult(STATUS_ACTION_COMPLETE);
-                response.addUserCredentials(PASSWORD, userInputs.get(PASSWORD));
-                return response;
-            }
-        }
-        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
-            response.setResult(STATUS_ATTR_REQUIRED);
-            response.setRequiredData(getPasswordData());
-            return response;
-        }
-        response.setResult("ERROR");
-        return response;
-    }
 
     @Override
     public List<InitData> getInitData() {
 
         List<InitData> response = new ArrayList<>();
         response.add(getAttrCollectInitData());
-        response.add(getCredentialEnrollmentInitData());
         return response;
-    }
-
-    @Override
-    public InitData getCredentialEnrollmentInitData() {
-
-        return new InitData(STATUS_CRED_REQUIRED, getPasswordData());
     }
 
     @Override
     public InitData getAuthInitData() {
 
         List<InputMetaData> inputMetaData = new ArrayList<>();
-        inputMetaData.addAll(getUsernameData());
+        inputMetaData.addAll(getIdTokenRequirement());
         inputMetaData.addAll(getPasswordData());
         return new InitData("AUTH_REQUIRED", inputMetaData);
     }
@@ -122,14 +92,14 @@ public class PasswordOnboarderTest implements Authentication, AttributeCollectio
     @Override
     public InitData getAttrCollectInitData() {
 
-        return new InitData(STATUS_ATTR_REQUIRED, getUsernameData());
+        return new InitData(STATUS_ATTR_REQUIRED, getIdTokenRequirement());
     }
 
-    private List<InputMetaData> getUsernameData() {
+    private List<InputMetaData> getIdTokenRequirement() {
 
         // Define a new list of InputMetaData and add the data object and return the list.
         List<InputMetaData> inputMetaData = new ArrayList<>();
-        InputMetaData e1 = new InputMetaData(USERNAME, "attribute", 1);
+        InputMetaData e1 = new InputMetaData("google_id_token", "attribute", 1);
         e1.setMandatory(true);
         e1.setValidationRegex("*");
         inputMetaData.add(e1);

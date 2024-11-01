@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
+import java.util.Map;
 import org.wso2.carbon.identity.user.self.registration.util.Constants;
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
@@ -74,15 +75,18 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
     }
 
     @Override
-    public NodeResponse execute(InputData inputData, RegistrationContext context) {
+    public NodeResponse execute(RegistrationContext context) {
 
-        if (inputData != null && inputData.getUserInput() != null && !inputData.getUserInput().isEmpty()) {
+        Map<String, String> inputData = context.getUserInputData();
+
+        if (inputData != null && inputData.containsKey(USER_CHOICE)) {
             for (TaskExecutionNode nextNode : nextNodes) {
                 Executor executor = nextNode.getExecutor();
                 if (executor != null) {
                     String executorName = executor.getName();
-                    if (inputData.getUserInput().get(USER_CHOICE).equals(executorName)) {
+                    if (inputData.get(USER_CHOICE).equals(executorName)) {
                         setNextNode(nextNode);
+                        inputData.remove(USER_CHOICE);
                         break;
                     }
                 }

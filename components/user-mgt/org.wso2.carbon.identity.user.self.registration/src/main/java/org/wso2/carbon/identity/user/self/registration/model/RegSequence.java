@@ -93,9 +93,7 @@ public class RegSequence {
 
         while (currentNode != null) {
 
-            // Retrieve the inputs for the current node and remove it from the context.
-            InputData dataForCurrentNode = context.retrieveUserInputFromContext(currentNode.getNodeId());
-            NodeResponse nodeResponse = currentNode.execute(dataForCurrentNode, context);
+            NodeResponse nodeResponse = currentNode.execute(context);
 
             if (STATUS_USER_INPUT_REQUIRED.equals(nodeResponse.getStatus())) {
                 context.setCurrentNode(currentNode);

@@ -32,11 +32,10 @@ public interface CredentialEnrollment extends Executor {
     /**
      * Perform a credential enrollment action with the given input and update the context.
      *
-     * @param input   Input data.
      * @param context Registration context.
      * @return ExecutorResponse.
      */
-    ExecutorResponse enrollCredential(Map<String, String> input, RegistrationContext context);
+    ExecutorResponse enrollCredential(RegistrationContext context);
 
     /**
      * Get the initial data required for credential enrollment.

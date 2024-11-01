@@ -32,11 +32,10 @@ public interface AttributeCollection extends Executor {
     /**
      * Perform attribute collection from the given input and update the context.
      *
-     * @param input  Input data.
      * @param context Registration context.
      * @return  ExecutorResponse.
      */
-    ExecutorResponse collect(Map<String, String> input, RegistrationContext context);
+    ExecutorResponse collect(RegistrationContext context);
 
     /**
      * Get the initial data required for attribute collection.

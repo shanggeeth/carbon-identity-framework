@@ -32,11 +32,10 @@ public interface Verification extends Executor {
     /**
      * Perform a verification action with the given input and update the context.
      *
-     * @param input  Input data.
      * @param context Registration context.
      * @return ExecutorResponse.
      */
-    ExecutorResponse verify(Map<String, String> input, RegistrationContext context);
+    ExecutorResponse verify(RegistrationContext context);
 
     /**
      * Get the initial data required for verification.

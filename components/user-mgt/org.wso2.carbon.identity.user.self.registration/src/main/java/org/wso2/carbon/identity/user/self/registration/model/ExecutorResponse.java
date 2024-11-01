@@ -19,31 +19,41 @@
 package org.wso2.carbon.identity.user.self.registration.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Model class to represent the response of an executor.
  */
 public class ExecutorResponse {
 
-    private String status;
-    private List<InputMetaData> requiredData;
+    private String result;
+    private List<InputMetaData> requiredData = new ArrayList<>();
+    private final Map<String, Object> updatedUserClaims = new HashMap<>();
+    private final Map<String, String> userCredentials = new HashMap<>();
+    private final Map<String, Object> contextProperties = new HashMap<>();
+    private final Map<String, String> additionalInfo = new HashMap<>();
     private Message message;
 
-    public ExecutorResponse(String status) {
+    public ExecutorResponse() {
 
-        this.status = status;
+    }
+
+    public ExecutorResponse(String result) {
+
+        this.result = result;
         this.requiredData = new ArrayList<>();
     }
 
-    public String getStatus() {
+    public String getResult() {
 
-        return status;
+        return result;
     }
 
-    public void setStatus(String status) {
+    public void setResult(String result) {
 
-        this.status = status;
+        this.result = result;
     }
 
     public List<InputMetaData> getRequiredData() {
@@ -70,5 +80,45 @@ public class ExecutorResponse {
 
         this.message = message;
     }
-}
 
+    public Map<String, Object> getUpdatedUserClaims() {
+
+        return updatedUserClaims;
+    }
+
+    public void addUpdatedUserClaims(String key, String value) {
+
+        updatedUserClaims.put(key, value);
+    }
+
+    public Map<String, String> getUserCredentials() {
+
+        return userCredentials;
+    }
+
+    public void addUserCredentials(String key, String value) {
+
+        userCredentials.put(key, value);
+    }
+
+    public Map<String, Object> getContextProperties() {
+
+        return contextProperties;
+    }
+
+    public void addContextProperty(String key, String value) {
+
+        contextProperties.put(key, value);
+    }
+
+    public Map<String, String> getAdditionalInfo() {
+
+        return additionalInfo;
+    }
+
+    public void addAdditionalInfo(String key, String value) {
+
+        contextProperties.put(key, value);
+    }
+
+}

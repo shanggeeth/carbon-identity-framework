@@ -102,14 +102,14 @@ public class RegistrationFrameworkUtils {
         UserStoreManager userStoreManager = getUserstoreManager(tenantDomain);
 
         Map<String, String> claims = new HashMap<>();
-        claims.putAll(user.getClaims());
+//        claims.putAll(user.getClaims());
 
-        String password;
-        if (!user.isPasswordless()) {
-            password = user.getCredential();
-        } else {
-            password = String.valueOf(new DefaultPasswordGenerator().generatePassword());
-        }
+        String password = String.valueOf(new DefaultPasswordGenerator().generatePassword());
+//        if (!user.isPasswordless()) {
+//            password = user.getCredential();
+//        } else {
+//            password = String.valueOf(new DefaultPasswordGenerator().generatePassword());
+//        }
         try {
             userStoreManager
                     .addUser(IdentityUtil.addDomainToName(user.getUsername(), "PRIMARY"), password, null, claims, null);

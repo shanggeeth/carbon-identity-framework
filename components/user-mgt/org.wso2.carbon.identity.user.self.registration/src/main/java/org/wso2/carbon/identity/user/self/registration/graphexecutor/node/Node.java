@@ -66,12 +66,11 @@ public interface Node {
     /**
      * Execute the node.
      *
-     * @param inputs The input data.
      * @param context The registration context.
      * @return The response of the node.
      * @throws RegistrationFrameworkException If an error occurs while executing the node.
      */
-    NodeResponse execute(InputData inputs, RegistrationContext context) throws RegistrationFrameworkException; // Placeholder for node-specific actions
+    NodeResponse execute(RegistrationContext context) throws RegistrationFrameworkException; // Placeholder for node-specific actions
 
 
     /**

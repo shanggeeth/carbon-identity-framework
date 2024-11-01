@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NOT_STARTED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 
 public class RegistrationContext implements Serializable {
 
@@ -37,9 +37,9 @@ public class RegistrationContext implements Serializable {
     private RegistrationRequestedUser registeringUser = new RegistrationRequestedUser();
     private String tenantDomain;
     private String contextIdentifier;
-    private final Map<String, InputData> userInputs = new HashMap<>();
+    private Map<String, String> userInputData = new HashMap<>();
     private Map<String, List<InputMetaData>> requiredMetaData;
-    private String executorStatus = STATUS_NOT_STARTED;
+    private String executorStatus = STATUS_NEXT_ACTION_PENDING;
 
     private final List<String> authenticatedMethods = new ArrayList<>();
     private Map<String, Object> properties = new HashMap<>();
@@ -64,21 +64,14 @@ public class RegistrationContext implements Serializable {
         this.regSequence = regSequence;
     }
 
-    public void removeUserInputFromContext(String key) {
+    public Map<String, String> getUserInputData() {
 
-        userInputs.remove(key);
+        return userInputData;
     }
 
-    public void addUserInputs(String key, InputData value) {
+    public void addUserInputData(String key, String value) {
 
-        userInputs.put(key, value);
-    }
-
-    public void addUserInputs(Map<String, InputData> inputDataMap) {
-
-        if (inputDataMap != null) {
-            userInputs.putAll(inputDataMap);
-        }
+        userInputData.put(key, value);
     }
 
     public Map<String, List<InputMetaData>> getRequiredMetaData() {
@@ -136,9 +129,9 @@ public class RegistrationContext implements Serializable {
         return properties;
     }
 
-    public void setProperties(Map<String, Object> properties) {
+    public void addProperties(Map<String, Object> properties) {
 
-        this.properties = properties;
+        this.properties.putAll(properties);
     }
 
     public Object getProperty(String key) {
@@ -162,20 +155,6 @@ public class RegistrationContext implements Serializable {
     }
 
     /**
-     * Retrieve and remove a given user input from the context.
-     *
-     * @param key Key of the user input.
-     * @return User input data.
-     */
-    public InputData retrieveUserInputFromContext(String key) {
-
-        InputData requestedData = userInputs.get(key);
-        userInputs.remove(key);
-
-        return requestedData;
-    }
-
-    /**
      * Update the user input list in the context with the given input data map. This method will also update the
      * required data list in the context.
      *
@@ -186,7 +165,8 @@ public class RegistrationContext implements Serializable {
         for (Map.Entry<String, InputData> entry : inputDataMap.entrySet()) {
             if (entry.getValue() != null) {
                 requiredMetaData.remove(entry.getKey());
-                userInputs.put(entry.getKey(), entry.getValue());
+                InputData data = entry.getValue();
+                userInputData.putAll(data.getUserInput());
             }
         }
     }

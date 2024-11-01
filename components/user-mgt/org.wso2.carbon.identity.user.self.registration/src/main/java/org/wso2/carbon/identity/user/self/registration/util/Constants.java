@@ -23,8 +23,6 @@ package org.wso2.carbon.identity.user.self.registration.util;
  */
 public class Constants {
 
-    // Define a set of constants to track the status returned from the Executor level. The status can be COMPLETE,
-    // INCOMPLETE, USER_INPUT_REQUIRED, ERROR, USER_CHOICE_REQUIRED
     public static final String STATUS_FLOW_COMPLETE = "COMPLETE";
     public static final String STATUS_USER_INPUT_REQUIRED = "USER_INPUT_REQUIRED";
     public static final String STATUS_ERROR = "ERROR";
@@ -36,7 +34,7 @@ public class Constants {
     public static final String STATUS_ATTR_REQUIRED = "ATTR_REQUIRED";
     public static final String STATUS_CRED_REQUIRED = "CRED_REQUIRED";
     public static final String STATUS_VERIFICATION_REQUIRED = "VERIFICATION_REQUIRED";
-    public static final String STATUS_NOT_STARTED = "NOT_STARTED";
+    public static final String STATUS_NEXT_ACTION_PENDING = "ACTION_PENDING";
 
 
     // Define enums to handle the error codes and messages.
