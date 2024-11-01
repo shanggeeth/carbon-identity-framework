@@ -96,7 +96,7 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
             return new NodeResponse(Constants.STATUS_NODE_COMPLETE);
         }
         NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
-        response.addInputMetaData(this.getNodeId(), getRequiredData());
+        response.addInputMetaData(getRequiredData());
         return response;
     }
 

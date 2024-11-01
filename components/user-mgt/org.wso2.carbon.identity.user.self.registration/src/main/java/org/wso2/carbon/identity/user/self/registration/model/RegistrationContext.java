@@ -38,7 +38,7 @@ public class RegistrationContext implements Serializable {
     private String tenantDomain;
     private String contextIdentifier;
     private Map<String, String> userInputData = new HashMap<>();
-    private Map<String, List<InputMetaData>> requiredMetaData;
+    private List<InputMetaData> requiredMetaData;
     private String executorStatus = STATUS_NEXT_ACTION_PENDING;
 
     private final List<String> authenticatedMethods = new ArrayList<>();
@@ -74,12 +74,12 @@ public class RegistrationContext implements Serializable {
         userInputData.put(key, value);
     }
 
-    public Map<String, List<InputMetaData>> getRequiredMetaData() {
+    public List<InputMetaData> getRequiredMetaData() {
 
         return requiredMetaData;
     }
 
-    public void setRequiredMetaData(Map<String, List<InputMetaData>> requiredMetaData) {
+    public void setRequiredMetaData(List<InputMetaData> requiredMetaData) {
 
         this.requiredMetaData = requiredMetaData;
     }
@@ -158,16 +158,17 @@ public class RegistrationContext implements Serializable {
      * Update the user input list in the context with the given input data map. This method will also update the
      * required data list in the context.
      *
-     * @param inputDataMap User input data.
+     * @param userInput User input data.
      */
-    public void updateRequiredDataWithInputs(Map<String, InputData> inputDataMap) {
+    public void updateRequiredDataWithInputs(Map<String, String> userInput) {
 
-        for (Map.Entry<String, InputData> entry : inputDataMap.entrySet()) {
-            if (entry.getValue() != null) {
-                requiredMetaData.remove(entry.getKey());
-                InputData data = entry.getValue();
-                userInputData.putAll(data.getUserInput());
+        requiredMetaData.removeIf(inputMetaData -> {
+            String inputName = inputMetaData.getName();
+            if (userInput.containsKey(inputName)) {
+                userInputData.put(inputName, userInput.get(inputName));
+                return true;
             }
-        }
+            return false;
+        });
     }
 }

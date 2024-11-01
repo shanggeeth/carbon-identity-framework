@@ -70,7 +70,7 @@ public class CombinedInputCollectionNode extends AbstractNode {
         for (InputCollectionNode refNode : referencedNodes) {
             List<InputMetaData> dataRequired = refNode.getRequiredData();
             if (dataRequired != null) {
-                result.addInputMetaData(refNode.getNodeId(), dataRequired);
+                result.addInputMetaData(dataRequired);
             }
         }
         return result;

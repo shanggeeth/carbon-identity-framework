@@ -173,7 +173,7 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
         NodeResponse nodeResponse = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
         context.setExecutorStatus(response.getResult());
         context.addProperties(response.getContextProperties());
-        nodeResponse.addInputMetaData(getNodeId(), response.getRequiredData());
+        nodeResponse.addInputMetaData(response.getRequiredData());
         return nodeResponse;
     }
 

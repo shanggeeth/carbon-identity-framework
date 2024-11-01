@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.user.self.registration;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
@@ -86,15 +88,15 @@ public class UserRegistrationFlowService {
  * @return ExecutionState.
  * @throws RegistrationFrameworkException if something goes wrong while continuing the registration flow.
  */
-public ExecutionState continueFlow(String flowId, Map<String, InputData> inputs)
+public ExecutionState continueFlow(String flowId, InputData inputs)
         throws RegistrationFrameworkException {
 
     RegistrationContext context = RegistrationFrameworkUtils.retrieveRegContextFromCache(flowId);
     RegSequence sequence = context.getRegSequence();
-    if (!validateInputs(inputs, context)) {
+    if (!validateInputs(inputs.getUserInput(), context)) {
         throw new RegistrationFrameworkException("Invalid inputs provided.");
     }
-    context.updateRequiredDataWithInputs(inputs);
+    context.updateRequiredDataWithInputs(inputs.getUserInput());
     NodeResponse response = sequence.execute(context);
     ExecutionState state = new ExecutionState(flowId, response);
     // Save the current sequence in the context.
@@ -102,7 +104,7 @@ public ExecutionState continueFlow(String flowId, Map<String, InputData> inputs)
     return state;
 }
 
-private boolean validateInputs(Map<String, InputData> inputs, RegistrationContext context) {
+private boolean validateInputs(Map<String, String> inputs, RegistrationContext context) {
 
     if (context.getRequiredMetaData() == null) {
         return true;
@@ -111,39 +113,29 @@ private boolean validateInputs(Map<String, InputData> inputs, RegistrationContex
         return false;
     }
 
-    for (Map.Entry<String, List<InputMetaData>> entry : context.getRequiredMetaData().entrySet()) {
+    for (InputMetaData metaData : context.getRequiredMetaData()) {
 
-        if (inputs.get(entry.getKey()) == null) {
+        if (metaData.isMandatory() && inputs.get(metaData.getName()) == null) {
             return false;
         }
 
-        Map<String, String> inputForNode = inputs.get(entry.getKey()).getUserInput();
+        if (metaData.getValidationRegex() != null &&
+                !inputs.get(metaData.getName()).matches(metaData.getValidationRegex())) {
+            return false;
+        }
 
-        for (InputMetaData metaData : entry.getValue()) {
-
-            // Return false if the input is mandatory and not provided.
-            if (metaData.isMandatory() && (inputForNode == null || inputForNode.get(metaData.getName()) == null)) {
-                return false;
-            }
-
-            // Return false if the regex validation fails.
-            if (metaData.getValidationRegex() != null && inputForNode != null &&
-                    !inputForNode.get(metaData.getName()).matches(metaData.getValidationRegex())) {
-                return false;
-            }
-
-            // Return false if the given option is not in the list of provided options.
-            List<Object> providedOptions = metaData.getOptions();
-            if (providedOptions != null && !providedOptions.isEmpty() && inputForNode != null &&
-                    !providedOptions.contains(inputForNode.get(metaData.getName()))) {
-                return false;
-            }
+        // Return false if the given option is not in the list of provided options.
+        List<Object> providedOptions = metaData.getOptions();
+        if (providedOptions != null && !providedOptions.isEmpty() &&
+                !providedOptions.contains(inputs.get(metaData.getName()))) {
+            return false;
         }
     }
+
     return true;
 }
 
-private void filterRequiredData() {
+    private void filterRequiredData() {
 
-}
+    }
 }
