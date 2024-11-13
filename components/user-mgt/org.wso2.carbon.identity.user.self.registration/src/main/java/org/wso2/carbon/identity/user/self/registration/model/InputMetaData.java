@@ -21,8 +21,12 @@ package org.wso2.carbon.identity.user.self.registration.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Model class to represent the metadata of an input field.
+ */
 public class InputMetaData {
 
+    private String id;
     private String name;
     private String availableValue;
     private String dataType;
@@ -33,11 +37,22 @@ public class InputMetaData {
     private String i18nKey;
     private List<Object> options = new ArrayList<>();
 
-    public InputMetaData(String name, String dataType, int order) {
+    public InputMetaData(String id, String name, String dataType, int order) {
 
+        this.id = id;
         this.name = name;
         this.dataType = dataType;
         this.setOrder(order);
+    }
+
+    public String getId() {
+
+        return id;
+    }
+
+    public void setId(String id) {
+
+        this.id = id;
     }
 
     public String getName() {

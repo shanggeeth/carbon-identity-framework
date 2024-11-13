@@ -19,6 +19,7 @@
 package org.wso2.carbon.identity.user.self.registration.temp;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.wso2.carbon.identity.user.self.registration.action.AttributeCollection;
@@ -28,6 +29,8 @@ import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.util.Constants;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.PASSWORD;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_CRED_REQUIRED;
@@ -36,7 +39,6 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.STA
 public class PasswordOnboarderTest implements Authentication, AttributeCollection, CredentialEnrollment {
 
     private static final String USERNAME = "http://wso2.org/claims/username";
-    private static final String PASSWORD = "password";
 
     public String getName() {
 
@@ -59,7 +61,9 @@ public class PasswordOnboarderTest implements Authentication, AttributeCollectio
         if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
             if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(USERNAME)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
-                response.addUpdatedUserClaims(USERNAME, userInputs.get(USERNAME));
+                Map<String, Object> userClaims = new HashMap<>();
+                userClaims.put(USERNAME, userInputs.get(USERNAME));
+                response.setUpdatedUserClaims(userClaims);
                 return response;
             }
         }
@@ -82,7 +86,9 @@ public class PasswordOnboarderTest implements Authentication, AttributeCollectio
         if (STATUS_CRED_REQUIRED.equals(context.getExecutorStatus())) {
             if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(PASSWORD)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
-                response.addUserCredentials(PASSWORD, userInputs.get(PASSWORD));
+                Map<String, String> credentials = new HashMap<>();
+                credentials.put(PASSWORD, userInputs.get(PASSWORD));
+                response.setUserCredentials(credentials);
                 return response;
             }
         }
@@ -129,7 +135,7 @@ public class PasswordOnboarderTest implements Authentication, AttributeCollectio
 
         // Define a new list of InputMetaData and add the data object and return the list.
         List<InputMetaData> inputMetaData = new ArrayList<>();
-        InputMetaData e1 = new InputMetaData(USERNAME, "attribute", 1);
+        InputMetaData e1 = new InputMetaData(USERNAME, USERNAME, "attribute", 1);
         e1.setMandatory(true);
         e1.setValidationRegex("*");
         inputMetaData.add(e1);
@@ -139,7 +145,7 @@ public class PasswordOnboarderTest implements Authentication, AttributeCollectio
     private List<InputMetaData> getPasswordData() {
 
         List<InputMetaData> inputMetaData = new ArrayList<>();
-        InputMetaData e2 = new InputMetaData("password", "credential", 1);
+        InputMetaData e2 = new InputMetaData("password", PASSWORD, "credential", 1);
         e2.setMandatory(true);
         e2.setValidationRegex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$");
         inputMetaData.add(e2);

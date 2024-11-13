@@ -16,20 +16,11 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.executor;
+package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
 import java.util.List;
-import org.wso2.carbon.identity.user.self.registration.model.InitData;
 
-/**
- * A wrapper interface for all the action types of registration.
- */
-public interface Executor {
+public interface DecisionNode {
 
-    String getName();
-
-    List<InitData> getInitData();
-
-    // TODO Have a execute function in this interface also to handle any actions that are not covered by the
-    // action interfaces. Ex: user creation, org domain resolver
+    public List<Node> getNextNodes();
 }

@@ -29,11 +29,11 @@ import java.util.Map;
 public class ExecutorResponse {
 
     private String result;
-    private List<InputMetaData> requiredData = new ArrayList<>();
-    private final Map<String, Object> updatedUserClaims = new HashMap<>();
-    private final Map<String, String> userCredentials = new HashMap<>();
-    private final Map<String, Object> contextProperties = new HashMap<>();
-    private final Map<String, String> additionalInfo = new HashMap<>();
+    private List<InputMetaData> requiredData;
+    private Map<String, Object> updatedUserClaims;
+    private Map<String, String> userCredentials;
+    private Map<String, Object> contextProperties;
+    private Map<String, String> additionalInfo;
     private Message message;
 
     public ExecutorResponse() {
@@ -43,7 +43,6 @@ public class ExecutorResponse {
     public ExecutorResponse(String result) {
 
         this.result = result;
-        this.requiredData = new ArrayList<>();
     }
 
     public String getResult() {
@@ -66,11 +65,6 @@ public class ExecutorResponse {
         this.requiredData = requiredData;
     }
 
-    public void addRequiredData(List<InputMetaData> requiredData) {
-
-        this.requiredData.addAll(requiredData);
-    }
-
     public Message getMessage() {
 
         return message;
@@ -86,9 +80,9 @@ public class ExecutorResponse {
         return updatedUserClaims;
     }
 
-    public void addUpdatedUserClaims(String key, String value) {
+    public void setUpdatedUserClaims(Map<String, Object> updatedUserClaims) {
 
-        updatedUserClaims.put(key, value);
+        this.updatedUserClaims = updatedUserClaims;
     }
 
     public Map<String, String> getUserCredentials() {
@@ -96,9 +90,9 @@ public class ExecutorResponse {
         return userCredentials;
     }
 
-    public void addUserCredentials(String key, String value) {
+    public void setUserCredentials(Map<String, String> userCredentials) {
 
-        userCredentials.put(key, value);
+        this.userCredentials = userCredentials;
     }
 
     public Map<String, Object> getContextProperties() {
@@ -106,9 +100,9 @@ public class ExecutorResponse {
         return contextProperties;
     }
 
-    public void addContextProperty(String key, String value) {
+    public void setContextProperty(Map<String, Object> contextProperties) {
 
-        contextProperties.put(key, value);
+        this.contextProperties = contextProperties;
     }
 
     public Map<String, String> getAdditionalInfo() {
@@ -116,9 +110,8 @@ public class ExecutorResponse {
         return additionalInfo;
     }
 
-    public void addAdditionalInfo(String key, String value) {
+    public void setAdditionalInfo(Map<String, String> additionalInfo) {
 
-        contextProperties.put(key, value);
+        this.additionalInfo = additionalInfo;
     }
-
 }

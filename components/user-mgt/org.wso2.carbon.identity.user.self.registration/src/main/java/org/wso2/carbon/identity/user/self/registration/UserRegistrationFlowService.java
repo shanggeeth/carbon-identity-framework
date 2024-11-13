@@ -77,65 +77,64 @@ public class UserRegistrationFlowService {
         NodeResponse response = sequence.execute(context);
         RegistrationFrameworkUtils.addRegContextToCache(context);
 
+        // todo include the details for UI rendering.
         return new ExecutionState(flowId, response);
     }
 
-/**
- * Continues the registration flow for the given flow ID with the provided user inputs.
- *
- * @param flowId Flow ID.
- * @param inputs User inputs.
- * @return ExecutionState.
- * @throws RegistrationFrameworkException if something goes wrong while continuing the registration flow.
- */
-public ExecutionState continueFlow(String flowId, InputData inputs)
-        throws RegistrationFrameworkException {
+    /**
+     * Continues the registration flow for the given flow ID with the provided user inputs.
+     *
+     * @param flowId Flow ID.
+     * @param inputs User inputs.
+     * @return ExecutionState.
+     * @throws RegistrationFrameworkException if something goes wrong while continuing the registration flow.
+     */
+    public ExecutionState continueFlow(String flowId, InputData inputs)
+            throws RegistrationFrameworkException {
 
-    RegistrationContext context = RegistrationFrameworkUtils.retrieveRegContextFromCache(flowId);
-    RegSequence sequence = context.getRegSequence();
-    if (!validateInputs(inputs.getUserInput(), context)) {
-        throw new RegistrationFrameworkException("Invalid inputs provided.");
+        RegistrationContext context = RegistrationFrameworkUtils.retrieveRegContextFromCache(flowId);
+        RegSequence sequence = context.getRegSequence();
+        if (!validateInputs(inputs.getUserInput(), context)) {
+            throw new RegistrationFrameworkException("Invalid inputs provided.");
+        }
+        context.updateRequiredDataWithInputs(inputs.getUserInput());
+        NodeResponse response = sequence.execute(context);
+        ExecutionState state = new ExecutionState(flowId, response);
+        // Save the current sequence in the context.
+        RegistrationFrameworkUtils.addRegContextToCache(context);
+
+        // todo include the details for UI rendering.
+        return state;
     }
-    context.updateRequiredDataWithInputs(inputs.getUserInput());
-    NodeResponse response = sequence.execute(context);
-    ExecutionState state = new ExecutionState(flowId, response);
-    // Save the current sequence in the context.
-    RegistrationFrameworkUtils.addRegContextToCache(context);
-    return state;
-}
 
-private boolean validateInputs(Map<String, String> inputs, RegistrationContext context) {
+    private boolean validateInputs(Map<String, String> inputs, RegistrationContext context) {
 
-    if (context.getRequiredMetaData() == null) {
+        if (context.getRequiredMetaData() == null) {
+            return true;
+        }
+        if (context.getRequiredMetaData() != null && (inputs == null || inputs.isEmpty())) {
+            return false;
+        }
+
+        for (InputMetaData metaData : context.getRequiredMetaData()) {
+
+            if (metaData.isMandatory() && inputs.get(metaData.getName()) == null) {
+                return false;
+            }
+
+            if (metaData.getValidationRegex() != null &&
+                    !inputs.get(metaData.getName()).matches(metaData.getValidationRegex())) {
+                return false;
+            }
+
+            // Return false if the given option is not in the list of provided options.
+            List<Object> providedOptions = metaData.getOptions();
+            if (providedOptions != null && !providedOptions.isEmpty() &&
+                    !providedOptions.contains(inputs.get(metaData.getName()))) {
+                return false;
+            }
+        }
+
         return true;
-    }
-    if (context.getRequiredMetaData() != null && (inputs == null || inputs.isEmpty())) {
-        return false;
-    }
-
-    for (InputMetaData metaData : context.getRequiredMetaData()) {
-
-        if (metaData.isMandatory() && inputs.get(metaData.getName()) == null) {
-            return false;
-        }
-
-        if (metaData.getValidationRegex() != null &&
-                !inputs.get(metaData.getName()).matches(metaData.getValidationRegex())) {
-            return false;
-        }
-
-        // Return false if the given option is not in the list of provided options.
-        List<Object> providedOptions = metaData.getOptions();
-        if (providedOptions != null && !providedOptions.isEmpty() &&
-                !providedOptions.contains(inputs.get(metaData.getName()))) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-    private void filterRequiredData() {
-
     }
 }

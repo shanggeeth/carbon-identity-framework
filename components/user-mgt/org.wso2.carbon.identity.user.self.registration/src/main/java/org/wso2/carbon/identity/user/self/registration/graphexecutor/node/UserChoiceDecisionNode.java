@@ -36,12 +36,12 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.STA
  */
 public class UserChoiceDecisionNode extends AbstractNode implements InputCollectionNode {
 
-    private List<TaskExecutionNode> nextNodes = new ArrayList<>(); // For branching paths
+    private List<Node> nextNodes = new ArrayList<>(); // For branching paths
     private static final String USER_CHOICE = "user-choice";
 
-    public UserChoiceDecisionNode(String id) {
+    public UserChoiceDecisionNode() {
 
-        setId(id);
+        super();
     }
 
     /**
@@ -49,7 +49,7 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
      *
      * @param nextNodes List of Task Executor Nodes.
      */
-    public void setNextNodes(List<TaskExecutionNode> nextNodes) {
+    public void setNextNodes(List<Node> nextNodes) {
 
         this.nextNodes = nextNodes;
     }
@@ -59,7 +59,7 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
      *
      * @return List of Task Executor Nodes.
      */
-    public List<TaskExecutionNode> getNextNodes() {
+    public List<Node> getNextNodes() {
 
         return this.nextNodes;
     }
@@ -80,14 +80,16 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
         Map<String, String> inputData = context.getUserInputData();
 
         if (inputData != null && inputData.containsKey(USER_CHOICE)) {
-            for (TaskExecutionNode nextNode : nextNodes) {
-                Executor executor = nextNode.getExecutor();
-                if (executor != null) {
-                    String executorName = executor.getName();
-                    if (inputData.get(USER_CHOICE).equals(executorName)) {
-                        setNextNode(nextNode);
-                        inputData.remove(USER_CHOICE);
-                        break;
+            for (Node nextNode : nextNodes) {
+                if (nextNode instanceof TaskExecutionNode) {
+                    Executor executor = ((TaskExecutionNode) nextNode).getExecutor();
+                    if (executor != null) {
+                        String executorName = executor.getName();
+                        if (inputData.get(USER_CHOICE).equals(executorName)) {
+                            setNextNode(nextNode);
+                            inputData.remove(USER_CHOICE);
+                            break;
+                        }
                     }
                 }
             }
@@ -107,11 +109,15 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
             return null;
         }
 
-        InputMetaData meta = new InputMetaData(USER_CHOICE, "multiple-options", 1);
+        InputMetaData meta = new InputMetaData(USER_CHOICE, USER_CHOICE, "multiple-options", 1);
         meta.setMandatory(true);
         meta.setI18nKey("user.choice");
-        for (TaskExecutionNode nextNode : nextNodes) {
-            meta.addOption(nextNode.getExecutor().getName());
+        for (Node nextNode : nextNodes) {
+            if (nextNode instanceof TaskExecutionNode) {
+                meta.addOption(((TaskExecutionNode)nextNode).getExecutor().getName());
+            } else {
+                meta.addOption(nextNode.getNodeId());
+            }
         }
         List<InputMetaData> inputMetaList = new ArrayList<>();
         inputMetaList.add(meta);

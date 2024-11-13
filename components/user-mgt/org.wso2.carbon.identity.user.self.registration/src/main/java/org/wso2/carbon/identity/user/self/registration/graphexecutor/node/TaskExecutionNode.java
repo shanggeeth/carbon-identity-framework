@@ -19,9 +19,11 @@
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.ErrorMessages.ERROR_EXECUTOR_NOT_FOUND;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.ErrorMessages.ERROR_EXECUTOR_UNHANDLED_DATA;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_CRED_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_EXTERNAL_REDIRECTION;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NODE_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_USER_INPUT_REQUIRED;
@@ -49,9 +51,9 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
 
     private final Executor executor;
 
-    public TaskExecutionNode(String id, Executor executor) {
+    public TaskExecutionNode(Executor executor) {
 
-        setId(id);
+        super();
         this.executor = executor;
     }
 
@@ -97,8 +99,6 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
     private NodeResponse triggerExecutor(RegistrationContext context)
             throws RegistrationFrameworkException {
 
-        String executorStatus = context.getExecutorStatus();
-        ExecutorResponse response;
         Optional<NodeResponse> attributeCollectionResponse = triggerAttributeCollection(context);
         if (attributeCollectionResponse.isPresent()) {
             return attributeCollectionResponse.get();
@@ -110,11 +110,9 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
         }
 
         Optional<NodeResponse> verificationResponse = triggerVerification(context);
-        if (verificationResponse.isPresent()) {
-            return verificationResponse.get();
-        }
+        return verificationResponse.orElseGet(() -> new NodeResponse(STATUS_NODE_COMPLETE));
 
-        return new NodeResponse(STATUS_NODE_COMPLETE);
+        // Todo Need to verify whether there can be any other executor types than this.
     }
 
     private Optional<NodeResponse> triggerAttributeCollection(RegistrationContext context) throws RegistrationFrameworkException {
@@ -128,7 +126,7 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
                 return Optional.of(handleIncompleteStatus(context, response));
             } else {
                 context.setExecutorStatus(STATUS_NEXT_ACTION_PENDING);
-                handleCompleteStatus(context,response);
+                handleCompleteStatus(context, response);
             }
         }
         return Optional.empty();
@@ -170,19 +168,33 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
 
     private NodeResponse handleIncompleteStatus(RegistrationContext context, ExecutorResponse response) {
 
-        NodeResponse nodeResponse = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
         context.setExecutorStatus(response.getResult());
         context.addProperties(response.getContextProperties());
+
+        NodeResponse nodeResponse;
+        if (STATUS_EXTERNAL_REDIRECTION.equals(response.getResult())) {
+            nodeResponse = new NodeResponse(STATUS_EXTERNAL_REDIRECTION);
+        } else {
+            nodeResponse = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
+        }
         nodeResponse.addInputMetaData(response.getRequiredData());
+        nodeResponse.addAdditionalInfo(response.getAdditionalInfo());
+        nodeResponse.setMessage(response.getMessage());
         return nodeResponse;
     }
 
     private void handleCompleteStatus(RegistrationContext context, ExecutorResponse response)
             throws RegistrationServerException {
 
-        if (!response.getRequiredData().isEmpty()) {
-            throw new RegistrationServerException("Required data should be empty to complete the node.");
+        if (!response.getRequiredData().isEmpty() || !response.getAdditionalInfo().isEmpty()) {
+            throw new RegistrationServerException(ERROR_EXECUTOR_UNHANDLED_DATA.getCode(),
+                                                  ERROR_EXECUTOR_UNHANDLED_DATA.getMessage(),
+                                                  String.format(ERROR_EXECUTOR_UNHANDLED_DATA.getDescription(),
+                                                                getExecutor().getName()));
         }
+
+        // todo handle the scenario where the user is already onboarded and the executor is trying to update a user
+        //  in the userstore.
         RegistrationRequestedUser user = context.getRegisteringUser();
         if (response.getUpdatedUserClaims() != null) {
             user.addClaims(response.getUpdatedUserClaims());

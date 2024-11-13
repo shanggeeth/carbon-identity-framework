@@ -40,6 +40,8 @@ public class RegistrationContext implements Serializable {
     private Map<String, String> userInputData = new HashMap<>();
     private List<InputMetaData> requiredMetaData;
     private String executorStatus = STATUS_NEXT_ACTION_PENDING;
+    private String userAssertion;
+    private String userId;
 
     private final List<String> authenticatedMethods = new ArrayList<>();
     private Map<String, Object> properties = new HashMap<>();
@@ -170,5 +172,25 @@ public class RegistrationContext implements Serializable {
             }
             return false;
         });
+    }
+
+    public String getUserAssertion() {
+
+        return userAssertion;
+    }
+
+    public void setUserAssertion(String userAssertion) {
+
+        this.userAssertion = userAssertion;
+    }
+
+    public String getUserId() {
+
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+
+        this.userId = userId;
     }
 }

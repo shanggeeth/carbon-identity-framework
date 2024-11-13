@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
+import java.util.UUID;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
@@ -27,13 +28,13 @@ import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext
  */
 public abstract class AbstractNode implements Node {
 
-    private String id;
+    private final String id;
     private Node nextNode;
     private Node previousNode;
 
-    public void setId(String id) {
+    public AbstractNode() {
 
-        this.id = id;
+        this.id = UUID.randomUUID().toString();
     }
 
     @Override

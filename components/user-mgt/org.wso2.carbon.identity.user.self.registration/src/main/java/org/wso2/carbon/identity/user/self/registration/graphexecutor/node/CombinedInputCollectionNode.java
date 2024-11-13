@@ -20,7 +20,6 @@ package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
-import org.wso2.carbon.identity.user.self.registration.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
@@ -36,9 +35,9 @@ public class CombinedInputCollectionNode extends AbstractNode {
 
     private List<InputCollectionNode> referencedNodes = new ArrayList<>();; // For branching paths
 
-    public CombinedInputCollectionNode(String id) {
+    public CombinedInputCollectionNode() {
 
-         setId(id);
+         super();
     }
 
     /**

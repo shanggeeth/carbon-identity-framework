@@ -22,7 +22,10 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.STA
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_VERIFICATION_REQUIRED;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.wso2.carbon.identity.user.self.registration.action.AttributeCollection;
@@ -65,7 +68,9 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
         if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
             if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(EMAIL_ADDRESS)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
-                response.addUpdatedUserClaims(EMAIL_ADDRESS, userInputs.get(EMAIL_ADDRESS));
+                Map<String,Object> updatedUserClaims = new HashMap<>();
+                updatedUserClaims.put(EMAIL_ADDRESS, userInputs.get(EMAIL_ADDRESS));
+                response.setUpdatedUserClaims(updatedUserClaims);
                 return response;
             }
         }
@@ -83,7 +88,8 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
 
         // Define a new list of InputMetaData and add the data object and return the list.
         List<InputMetaData> inputMetaData = new ArrayList<>();
-        InputMetaData data = new InputMetaData(EMAIL_ADDRESS, "string", 1);
+        String emailId = Base64.getEncoder().encodeToString(EMAIL_ADDRESS.getBytes(StandardCharsets.UTF_8));
+        InputMetaData data = new InputMetaData(emailId, EMAIL_ADDRESS, "string", 1);
         inputMetaData.add(data);
         return inputMetaData;
     }
@@ -91,7 +97,8 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
     private List<InputMetaData> getOTPMetaData(){
 
         List<InputMetaData> inputMetaData = new ArrayList<>();
-        InputMetaData data = new InputMetaData(EMAIL_OTP, "otp", 1);
+        String emailOtp = Base64.getEncoder().encodeToString(EMAIL_OTP.getBytes(StandardCharsets.UTF_8));
+        InputMetaData data = new InputMetaData(emailOtp, EMAIL_OTP, "otp", 1);
         inputMetaData.add(data);
         return inputMetaData;
     }
@@ -106,14 +113,18 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
         if (STATUS_VERIFICATION_REQUIRED.equals(context.getExecutorStatus())) {
             if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(EMAIL_OTP)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
-                response.addUpdatedUserClaims(EMAIL_VERIFIED_CLAIM_URI, "true");
+                Map<String, Object> updatedUserClaims = new HashMap<>();
+                updatedUserClaims.put(EMAIL_VERIFIED_CLAIM_URI, "true");
+                response.setUpdatedUserClaims(updatedUserClaims);
                 return response;
             }
         }
         if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
             response.setResult(STATUS_VERIFICATION_REQUIRED);
             response.setRequiredData(getOTPMetaData());
-            response.addContextProperty(EMAIL_OTP, "12345");
+            Map<String, Object> contextProperties = new HashMap<>();
+            contextProperties.put(EMAIL_OTP, "12345");
+            response.setContextProperty(contextProperties);
             return response;
         }
         response.setResult("ERROR");

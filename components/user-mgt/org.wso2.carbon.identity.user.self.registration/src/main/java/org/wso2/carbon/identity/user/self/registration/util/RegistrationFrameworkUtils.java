@@ -97,39 +97,6 @@ public class RegistrationFrameworkUtils {
         RegistrationContextCache.getInstance().clearCacheEntry(new RegistrationContextCacheKey(contextId));
     }
 
-    public static String createUser(RegistrationRequestedUser user, String tenantDomain) throws RegistrationFrameworkException {
-
-        UserStoreManager userStoreManager = getUserstoreManager(tenantDomain);
-
-        Map<String, String> claims = new HashMap<>();
-//        claims.putAll(user.getClaims());
-
-        String password = String.valueOf(new DefaultPasswordGenerator().generatePassword());
-//        if (!user.isPasswordless()) {
-//            password = user.getCredential();
-//        } else {
-//            password = String.valueOf(new DefaultPasswordGenerator().generatePassword());
-//        }
-        try {
-            userStoreManager
-                    .addUser(IdentityUtil.addDomainToName(user.getUsername(), "PRIMARY"), password, null, claims, null);
-            return ((AbstractUserStoreManager) userStoreManager).getUserIDFromUserName(user.getUsername());
-        } catch (UserStoreException e) {
-            throw new RegistrationFrameworkException("Error while creating user", e);
-        }
-    }
-
-    private static UserStoreManager getUserstoreManager(String tenantDomain) throws RegistrationFrameworkException {
-
-        RealmService realmService = UserRegistrationServiceDataHolder.getRealmService();
-        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
-        try {
-            return realmService.getTenantUserRealm(tenantId).getUserStoreManager();
-        } catch (UserStoreException e) {
-            throw new RegistrationFrameworkException("Error while retrieving user store manager", e);
-        }
-    }
-
     private static String getTenantDomain(HttpServletRequest request) throws RegistrationFrameworkException {
 
         if (IdentityTenantUtil.isTenantQualifiedUrlsEnabled()) {
@@ -157,7 +124,6 @@ public class RegistrationFrameworkUtils {
         }
         return tenantDomain;
     }
-
 
     public static ServiceProvider retrieveSpFromAppId(String appId, String tenantDomain) throws  RegistrationFrameworkException{
 

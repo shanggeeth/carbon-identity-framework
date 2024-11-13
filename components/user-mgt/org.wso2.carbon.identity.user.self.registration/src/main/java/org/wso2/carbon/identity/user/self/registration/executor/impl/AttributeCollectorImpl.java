@@ -22,6 +22,7 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.STA
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.wso2.carbon.identity.user.self.registration.action.AttributeCollection;
@@ -30,6 +31,9 @@ import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
+/**
+ * Implementation of an executor for attribute collection.
+ */
 public class AttributeCollectorImpl implements AttributeCollection {
 
     private String name;
@@ -67,7 +71,9 @@ public class AttributeCollectorImpl implements AttributeCollection {
             Map<String, String> input = context.getUserInputData();
             requiredData.removeIf(data -> {
                 if (input.containsKey(data.getName()) && input.get(data.getName()) != null) {
-                    response.addUpdatedUserClaims(data.getName(), input.get(data.getName()));
+                    Map<String, Object> updatedClaims = new HashMap<>();
+                    updatedClaims.put(data.getName(), input.get(data.getName()));
+                    response.setUpdatedUserClaims(updatedClaims);
                     return true;
                 }
                 return false;

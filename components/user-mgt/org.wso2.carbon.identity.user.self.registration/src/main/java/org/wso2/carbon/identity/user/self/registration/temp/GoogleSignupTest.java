@@ -21,8 +21,10 @@ package org.wso2.carbon.identity.user.self.registration.temp;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_CRED_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_EXTERNAL_REDIRECTION;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.wso2.carbon.identity.user.self.registration.action.AttributeCollection;
@@ -58,13 +60,16 @@ public class GoogleSignupTest implements Authentication, AttributeCollection {
         if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
             if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(ID_TOKEN)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
-                response.addUpdatedUserClaims("claimURI", "valueFromIDToken");
+                Map<String, Object> updatedClaims = new HashMap<>();
+                updatedClaims.put("claimURI", userInputs.get(ID_TOKEN));
+                response.setUpdatedUserClaims(updatedClaims);
                 return response;
             }
         }
         if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
             response.setResult(STATUS_ATTR_REQUIRED);
             response.setRequiredData(getIdTokenRequirement());
+            response.setAdditionalInfo(getConfigurations());
             return response;
         }
         response.setResult("ERROR");
@@ -83,36 +88,34 @@ public class GoogleSignupTest implements Authentication, AttributeCollection {
     @Override
     public InitData getAuthInitData() {
 
-        List<InputMetaData> inputMetaData = new ArrayList<>();
-        inputMetaData.addAll(getIdTokenRequirement());
-        inputMetaData.addAll(getPasswordData());
+        List<InputMetaData> inputMetaData = new ArrayList<>(getIdTokenRequirement());
         return new InitData("AUTH_REQUIRED", inputMetaData);
     }
 
     @Override
     public InitData getAttrCollectInitData() {
 
-        return new InitData(STATUS_ATTR_REQUIRED, getIdTokenRequirement());
+        return new InitData(STATUS_EXTERNAL_REDIRECTION, getIdTokenRequirement());
     }
 
     private List<InputMetaData> getIdTokenRequirement() {
 
         // Define a new list of InputMetaData and add the data object and return the list.
         List<InputMetaData> inputMetaData = new ArrayList<>();
-        InputMetaData e1 = new InputMetaData("google_id_token", "attribute", 1);
+        String attributeId = "google_id_token";
+        InputMetaData e1 = new InputMetaData(attributeId, "google_id_token", "attribute", 1);
         e1.setMandatory(true);
         e1.setValidationRegex("*");
         inputMetaData.add(e1);
         return inputMetaData;
     }
 
-    private List<InputMetaData> getPasswordData() {
+    private Map<String, String> getConfigurations() {
 
-        List<InputMetaData> inputMetaData = new ArrayList<>();
-        InputMetaData e2 = new InputMetaData("password", "credential", 1);
-        e2.setMandatory(true);
-        e2.setValidationRegex("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$");
-        inputMetaData.add(e2);
-        return inputMetaData;
+        Map<String, String> googleProperties = new HashMap<>();
+        googleProperties.put("redirectUrl", "https://accounts.google.com/o/oauth2/auth?response_type=code" +
+                "&redirect_uri=https%3A%2F%2Fexample-app.com%2Fredirect&state=e12f-ed27-49e5-ad0a-8bbb5671d81e%2COIDC" +
+                "&client_id=231644702133-ds23592jt.apps.googleusercontent.com&scope=openid");
+        return googleProperties;
     }
 }

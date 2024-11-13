@@ -35,21 +35,46 @@ public class Constants {
     public static final String STATUS_CRED_REQUIRED = "CRED_REQUIRED";
     public static final String STATUS_VERIFICATION_REQUIRED = "VERIFICATION_REQUIRED";
     public static final String STATUS_NEXT_ACTION_PENDING = "ACTION_PENDING";
+    public static final String STATUS_EXTERNAL_REDIRECTION = "EXTERNAL_REDIRECTION";
+    public static final String STATUS_USER_CREATED = "USER_CREATED";
 
+    public static final String PASSWORD = "PASSWORD";
+
+    public enum DataType {
+        STRING,
+        BOOLEAN,
+        INTEGER,
+        DECIMAL,
+        DATE,
+        TIME,
+        DATE_TIME,
+        OTP,
+        CREDENTIAL,
+        USER_CHOICE
+    }
 
     // Define enums to handle the error codes and messages.
     public enum ErrorMessages {
 
         // Server errors.
-        ERROR_SEQUENCE_NOT_DEFINED_FOR_TENANT("SRF-65001",
+        ERROR_SEQUENCE_NOT_DEFINED_FOR_TENANT("URF-65001",
                                    "Registration sequence not found.",
                                    "Registration sequence is not defined for the given tenant: %s"),
         ERROR_SEQUENCE_NOT_DEFINED_FOR_APP("SRF-65002",
                                               "Registration sequence not found.",
                                               "Registration sequence is not defined for the given application: %s"),
-        ERROR_EXECUTOR_NOT_FOUND("SRF-65003",
+        ERROR_EXECUTOR_NOT_FOUND("URF-65003",
                                  "Executor not found.",
                                  "Executor not found for the given node: %s"),
+        ERROR_EXECUTOR_UNHANDLED_DATA("URF-65004",
+                                      "Unhandled data found.",
+                                      "Executor %s has unhandled data though its status is completed."),
+        ERROR_ONBOARDING_USER("URF-65005",
+                              "Error on onboarding user.",
+                              "Unexpected error occurred while onboarding user: %s"),
+        ERROR_LOADING_USERSTORE_MANAGER("URF-65006",
+                              "Error on onboarding user.",
+                              "Cannot resolve the user store manager for the tenant: %s"),
 
         // Client errors.
         ERROR_INVALID_FLOW_ID("SRF-60001",

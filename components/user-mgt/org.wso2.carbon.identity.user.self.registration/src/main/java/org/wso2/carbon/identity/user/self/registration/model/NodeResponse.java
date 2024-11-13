@@ -19,6 +19,7 @@
 package org.wso2.carbon.identity.user.self.registration.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ public class NodeResponse {
 
     private String status;
     private List<InputMetaData> inputMetaDataList =  new ArrayList<>();
+    private Map<String, String> additionalInfo = new HashMap<>();
     private String userAssertion;
     private Message message;
 
@@ -38,7 +40,6 @@ public class NodeResponse {
         this.status = status;
     }
 
-    // Getters and Setters
     public String getStatus() {
         return status;
     }
@@ -85,5 +86,15 @@ public class NodeResponse {
     public void setMessage(Message message) {
 
         this.message = message;
+    }
+
+    public Map<String, String> getAdditionalInfo() {
+
+        return additionalInfo;
+    }
+
+    public void addAdditionalInfo(Map<String, String> additionalInfo) {
+
+        this.additionalInfo = additionalInfo;
     }
 }

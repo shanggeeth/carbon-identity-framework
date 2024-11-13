@@ -35,6 +35,7 @@ import org.wso2.carbon.identity.user.self.registration.executor.impl.AttributeCo
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.CombinedInputCollectionNode;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.TaskExecutionNode;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.UserChoiceDecisionNode;
+import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.UserOnboardNode;
 import org.wso2.carbon.identity.user.self.registration.util.RegistrationFrameworkUtils;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.RegSequence;
@@ -54,6 +55,27 @@ import java.util.List;
 public class AuthBasedSequenceLoader {
 
     private static final Log LOG = LogFactory.getLog(AuthBasedSequenceLoader.class);
+
+    public RegSequence loadSequence(String appId) {
+
+        RegSequence sequence;
+        if ("case1".equals(appId)) {
+            sequence = loadSequence1();
+        } else if ("case2".equals(appId)) {
+            sequence = loadSequence2();
+        } else if ("case3".equals(appId)) {
+            sequence = loadSequence3();
+        } else {
+            try {
+                sequence = new AuthBasedSequenceLoader().deriveRegistrationSequence(appId);
+            } catch (RegistrationFrameworkException e) {
+                LOG.error("Error while loading the sequence for the app: " + appId, e);
+                return null;
+            }
+        }
+        return sequence;
+    }
+
 
     private RegSequence deriveRegistrationSequence(String appId) throws RegistrationFrameworkException {
 
@@ -95,7 +117,7 @@ public class AuthBasedSequenceLoader {
     private Node defineNode(AuthenticationStep authenticationStep, String tenantDomain)
             throws RegistrationFrameworkException {
 
-        List<TaskExecutionNode> options = new ArrayList<>();
+        List<Node> options = new ArrayList<>();
 
         LocalAuthenticatorConfig[] localAuthenticators = authenticationStep.getLocalAuthenticatorConfigs();
         if (localAuthenticators != null) {
@@ -105,9 +127,7 @@ public class AuthBasedSequenceLoader {
             for (LocalAuthenticatorConfig localAuthenticator : localAuthenticators) {
                 Executor regExecutor = getRegExecutor(localAuthenticator.getName());
                 if (regExecutor != null) {
-                    String idpName = localAuthenticator.getName();
-                    String nodeId = Base64.getEncoder().encodeToString(idpName.getBytes(StandardCharsets.UTF_8));
-                    TaskExecutionNode node = new TaskExecutionNode(nodeId, regExecutor);
+                    TaskExecutionNode node = new TaskExecutionNode(regExecutor);
                     options.add(node);
                 }
             }
@@ -132,8 +152,7 @@ public class AuthBasedSequenceLoader {
                 Executor regExecutor = getRegExecutor(federatedAuthenticator.getName());
                 if (regExecutor != null) {
                     String idpName = federatedIDP.getIdentityProviderName();
-                    String nodeId = Base64.getEncoder().encodeToString(idpName.getBytes(StandardCharsets.UTF_8));
-                    TaskExecutionNode node = new TaskExecutionNode(nodeId, regExecutor);
+                    TaskExecutionNode node = new TaskExecutionNode(regExecutor);
                     options.add(node);
                 }
             }
@@ -143,9 +162,7 @@ public class AuthBasedSequenceLoader {
             return null;
         }
         if (options.size() > 1) {
-            String nodeId =
-                    Base64.getEncoder().encodeToString("userChoiceDecisionNode".getBytes(StandardCharsets.UTF_8));
-            UserChoiceDecisionNode userChoiceDecisionNode = new UserChoiceDecisionNode(nodeId);
+            UserChoiceDecisionNode userChoiceDecisionNode = new UserChoiceDecisionNode();
             userChoiceDecisionNode.setNextNodes(options);
             return userChoiceDecisionNode;
         }
@@ -175,8 +192,7 @@ public class AuthBasedSequenceLoader {
 
         AttributeCollectorImpl collector = getAttributeCollectionExecutor(
                 requestedClaims);
-        String nodeId = Base64.getEncoder().encodeToString("mandatoryAttributeCollection".getBytes(StandardCharsets.UTF_8));
-        return new TaskExecutionNode(nodeId, collector);
+        return new TaskExecutionNode(collector);
     }
 
     private AttributeCollectorImpl getAttributeCollectionExecutor(ClaimMapping[] requestedClaims) {
@@ -187,55 +203,45 @@ public class AuthBasedSequenceLoader {
         int order = 0;
         for (ClaimMapping claimMapping : requestedClaims) {
             String claimUri = claimMapping.getLocalClaim().getClaimUri();
-            InputMetaData inputMetaData = new InputMetaData(claimUri, "STRING", ++order);
+            String id = Base64.getEncoder().encodeToString(claimUri.getBytes(StandardCharsets.UTF_8));
+            InputMetaData inputMetaData = new InputMetaData(id, claimUri, "STRING", ++order);
             inputMetaData.setMandatory(claimMapping.isMandatory());
             collector.addRequiredData(inputMetaData);
         }
         return collector;
     }
 
-    public RegSequence loadSequence(String appId) {
-
-        if ("case1".equals(appId)) {
-            return loadSequence1();
-        } else if ("case2".equals(appId)) {
-            return loadSequence2();
-        } else if ("case3".equals(appId)) {
-            return loadSequence3();
-        }
-        try {
-            return new AuthBasedSequenceLoader().deriveRegistrationSequence(appId);
-        } catch (RegistrationFrameworkException e) {
-            LOG.error("Error while loading the sequence for the app: " + appId, e);
-            return null;
-        }
-    }
-
     private RegSequence loadSequence1() {
 
         AttributeCollectorImpl attrCollector1 = new AttributeCollectorImpl("AttributeCollector1");
-        InputMetaData e1 = new InputMetaData("emailaddress", "STRING", 1);
+        String emailId = Base64.getEncoder().encodeToString("emailaddress".getBytes(StandardCharsets.UTF_8));
+        InputMetaData e1 = new InputMetaData(emailId, "emailaddress", "STRING", 1);
         attrCollector1.addRequiredData(e1);
 
         AttributeCollectorImpl attrCollector2 = new AttributeCollectorImpl("AttributeCollector2");
-        InputMetaData e2 = new InputMetaData("firstname", "STRING", 1);
-        InputMetaData e3 = new InputMetaData("dob", "DATE", 2);
+        String firstNameId = Base64.getEncoder().encodeToString("firstname".getBytes(StandardCharsets.UTF_8));
+        String dobId = Base64.getEncoder().encodeToString("dob".getBytes(StandardCharsets.UTF_8));
+        InputMetaData e2 = new InputMetaData(firstNameId, "firstname", "STRING", 1);
+        InputMetaData e3 = new InputMetaData(dobId, "dob", "DATE", 2);
         attrCollector2.addRequiredData(e2);
         attrCollector2.addRequiredData(e3);
 
         PasswordOnboarderTest pwdOnboard = new PasswordOnboarderTest();
         EmailOTPExecutorTest emailOTPExecutor = new EmailOTPExecutorTest();
 
-        TaskExecutionNode node1 = new TaskExecutionNode("node1", attrCollector1);
-        UserChoiceDecisionNode node2 = new UserChoiceDecisionNode("node2");
-        TaskExecutionNode node3 = new TaskExecutionNode("node3", pwdOnboard);
-        TaskExecutionNode node4 = new TaskExecutionNode("node4", emailOTPExecutor);
-        TaskExecutionNode node5 = new TaskExecutionNode("node5", attrCollector2);
+        TaskExecutionNode node1 = new TaskExecutionNode(attrCollector1);
+        UserChoiceDecisionNode node2 = new UserChoiceDecisionNode();
+        TaskExecutionNode node3 = new TaskExecutionNode(pwdOnboard);
+        TaskExecutionNode node4 = new TaskExecutionNode(emailOTPExecutor);
+        TaskExecutionNode node5 = new TaskExecutionNode(attrCollector2);
+        UserOnboardNode node6 = new UserOnboardNode();
+
 
         node1.setNextNode(node2);
         node2.setNextNodes(new ArrayList<>(Arrays.asList(node3, node4)));
         node3.setNextNode(node5);
         node4.setNextNode(node5);
+        node5.setNextNode(node6);
 
         // Define the flow of the graph
         return new RegSequence(node1);
@@ -244,25 +250,28 @@ public class AuthBasedSequenceLoader {
     private RegSequence loadSequence2() {
 
         AttributeCollectorImpl attrCollector1 = new AttributeCollectorImpl("AttributeCollector1");
-        InputMetaData e1 = new InputMetaData("emailaddress", "STRING", 1);
+        String emailId = Base64.getEncoder().encodeToString("emailaddress".getBytes(StandardCharsets.UTF_8));
+        InputMetaData e1 = new InputMetaData(emailId, "emailaddress", "STRING", 1);
         attrCollector1.addRequiredData(e1);
 
         AttributeCollectorImpl attrCollector2 = new AttributeCollectorImpl("AttributeCollector2");
-        InputMetaData e2 = new InputMetaData("firstname", "STRING", 1);
-        InputMetaData e3 = new InputMetaData("dob", "DATE", 2);
+        String firstNameId = Base64.getEncoder().encodeToString("firstname".getBytes(StandardCharsets.UTF_8));
+        String dobId = Base64.getEncoder().encodeToString("dob".getBytes(StandardCharsets.UTF_8));
+        InputMetaData e2 = new InputMetaData(firstNameId, "firstname", "STRING", 1);
+        InputMetaData e3 = new InputMetaData(dobId, "dob", "DATE", 2);
         attrCollector2.addRequiredData(e2);
         attrCollector2.addRequiredData(e3);
 
         PasswordOnboarderTest pwdOnboard = new PasswordOnboarderTest();
         EmailOTPExecutorTest emailOTPExecutor = new EmailOTPExecutorTest();
 
-        TaskExecutionNode node1 = new TaskExecutionNode("node1", attrCollector1);
-        UserChoiceDecisionNode node2 = new UserChoiceDecisionNode("node2");
-        TaskExecutionNode node3 = new TaskExecutionNode("node3", pwdOnboard);
-        TaskExecutionNode node4 = new TaskExecutionNode("node4", emailOTPExecutor);
-        TaskExecutionNode node5 = new TaskExecutionNode("node5", attrCollector2);
+        TaskExecutionNode node1 = new TaskExecutionNode(attrCollector1);
+        UserChoiceDecisionNode node2 = new UserChoiceDecisionNode();
+        TaskExecutionNode node3 = new TaskExecutionNode(pwdOnboard);
+        TaskExecutionNode node4 = new TaskExecutionNode(emailOTPExecutor);
+        TaskExecutionNode node5 = new TaskExecutionNode(attrCollector2);
 
-        CombinedInputCollectionNode node0 = new CombinedInputCollectionNode("node0");
+        CombinedInputCollectionNode node0 = new CombinedInputCollectionNode();
         node0.setReferencedNodes(new ArrayList<>(Arrays.asList(node1, node2, node5)));
 
         node0.setNextNode(node1);
@@ -277,23 +286,26 @@ public class AuthBasedSequenceLoader {
     private RegSequence loadSequence3() {
 
         AttributeCollectorImpl attrCollector1 = new AttributeCollectorImpl("AttributeCollector1");
-        InputMetaData e1 = new InputMetaData("emailaddress", "STRING", 1);
+        String emailId = Base64.getEncoder().encodeToString("emailaddress".getBytes(StandardCharsets.UTF_8));
+        InputMetaData e1 = new InputMetaData(emailId, "emailaddress", "STRING", 1);
         attrCollector1.addRequiredData(e1);
 
         AttributeCollectorImpl attrCollector2 = new AttributeCollectorImpl("AttributeCollector2");
-        InputMetaData e2 = new InputMetaData("firstname", "STRING", 1);
-        InputMetaData e3 = new InputMetaData("dob", "DATE", 2);
+        String firstNameId = Base64.getEncoder().encodeToString("firstname".getBytes(StandardCharsets.UTF_8));
+        String dobId = Base64.getEncoder().encodeToString("dob".getBytes(StandardCharsets.UTF_8));
+        InputMetaData e2 = new InputMetaData(firstNameId, "firstname", "STRING", 1);
+        InputMetaData e3 = new InputMetaData(dobId, "dob", "DATE", 2);
         attrCollector2.addRequiredData(e2);
         attrCollector2.addRequiredData(e3);
 
         PasswordOnboarderTest pwdOnboard = new PasswordOnboarderTest();
         EmailOTPExecutorTest emailOTPExecutor = new EmailOTPExecutorTest();
 
-        TaskExecutionNode node1 = new TaskExecutionNode("node1", attrCollector1);
-        UserChoiceDecisionNode node2 = new UserChoiceDecisionNode("node2");
-        TaskExecutionNode node3 = new TaskExecutionNode("node3", pwdOnboard);
-        TaskExecutionNode node4 = new TaskExecutionNode("node4", emailOTPExecutor);
-        TaskExecutionNode node5 = new TaskExecutionNode("node5", attrCollector2);
+        TaskExecutionNode node1 = new TaskExecutionNode(attrCollector1);
+        UserChoiceDecisionNode node2 = new UserChoiceDecisionNode();
+        TaskExecutionNode node3 = new TaskExecutionNode(pwdOnboard);
+        TaskExecutionNode node4 = new TaskExecutionNode(emailOTPExecutor);
+        TaskExecutionNode node5 = new TaskExecutionNode(attrCollector2);
 
         node1.setNextNode(node2);
         node2.setNextNodes(new ArrayList<>(Arrays.asList(node3, node4)));
