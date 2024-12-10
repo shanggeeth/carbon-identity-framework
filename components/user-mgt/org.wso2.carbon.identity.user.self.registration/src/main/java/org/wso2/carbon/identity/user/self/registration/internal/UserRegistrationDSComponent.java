@@ -19,6 +19,7 @@ package org.wso2.carbon.identity.user.self.registration.internal;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.eclipse.equinox.http.helper.ContextPathServletAdaptor;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -27,12 +28,16 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.http.HttpService;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.user.self.registration.UserRegistrationFlowService;
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
 import org.wso2.carbon.identity.user.self.registration.executor.impl.AttributeCollectorImpl;
+import org.wso2.carbon.identity.user.self.registration.servlet.RegistrationOrchastrationServlet;
 import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.user.core.service.RealmService;
+
+import javax.servlet.Servlet;
 
 @Component(
          name = "user.self.registration.component",
@@ -43,6 +48,7 @@ public class UserRegistrationDSComponent {
 
     private static BundleContext bundleContext = null;
     private static RegistryService registryService = null;
+    private HttpService httpService;
     private static RealmService realmService = null;
     public static RegistryService getRegistryService() {
         return registryService;
@@ -55,6 +61,13 @@ public class UserRegistrationDSComponent {
         bundleContext = context.getBundleContext();
         bundleContext.registerService(UserRegistrationFlowService.class.getName(), UserRegistrationFlowService.getInstance(), null);
         bundleContext.registerService(Executor.class.getName(), attributeCollectionExecutor, null);
+
+        Servlet registrationOrchastrationServlet = new ContextPathServletAdaptor(new RegistrationOrchastrationServlet(), "/registration-orchestration");
+        try {
+            httpService.registerServlet("/registration-orchestration", registrationOrchastrationServlet, null, null);
+        } catch (Throwable e) {
+            log.error("Error when registering RegistrationOrchastrationServlet via the OSGi HttpService.", e);
+        }
     }
 
     @Deactivate
@@ -138,6 +151,29 @@ public class UserRegistrationDSComponent {
     protected void unsetExecutors(Executor executor) {
 
         UserRegistrationServiceDataHolder.getExecutors().remove(executor);
+    }
+
+    @Reference(
+            name = "osgi.http.service",
+            service = HttpService.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetHttpService"
+    )
+    protected void setHttpService(HttpService httpService) {
+
+        if (log.isDebugEnabled()) {
+            log.debug("HTTP Service is set in Trusted App mgt bundle");
+        }
+        this.httpService = httpService;
+    }
+
+    protected void unsetHttpService(HttpService httpService) {
+
+        if (log.isDebugEnabled()) {
+            log.debug("HTTP Service is unset in the Trusted App mgt bundle");
+        }
+        this.httpService = null;
     }
 }
 
